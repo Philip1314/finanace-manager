@@ -10,10 +10,19 @@
 <body>
     <div class="container" id="transactions-page">
         <header class="header">
-            <a href="index.html" class="back-arrow">&larr;</a>
-            <h1>Transactions</h1>
-            <div class="profile-icon" id="profileDateDisplay"></div>
+            <button class="menu-button" id="mainMenuButton">&#9776;</button> <h1>Transactions</h1>
+            <div class="header-right-icons">
+                <div class="profile-icon night-mode-toggle" id="nightModeToggle"></div> </div>
         </header>
+
+        <div class="main-menu-sidebar" id="mainMenuSidebar">
+            <button class="close-sidebar-button" id="closeSidebarButton">&times;</button>
+            <h2>Menu</h2>
+            <ul>
+                <li><a href="index.html">Dashboard</a></li>
+                <li><a href="transactions.html">Transactions</a></li>
+                <li><a href="savings.html">Savings</a></li> </ul>
+        </div>
 
         <nav class="months-nav">
             <button class="month-button" data-month="1">Jan</button>
@@ -55,7 +64,6 @@
                 <button class="clear-filters-button" id="clearFiltersButton">Clear Filters</button>
             </div>
 
-
             <div class="transactions-list" id="transactionsList">
                 </div>
         </main>
@@ -71,9 +79,9 @@
                 <input type="text" class="calculator-display" id="calculatorDisplay" value="0" readonly>
                 <div class="calculator-buttons">
                     <button class="calc-btn clear" data-action="clear">C</button>
+                    <button class="calc-btn backspace" data-action="backspace">←</button>
                     <button class="calc-btn operator" data-action="divide">/</button>
                     <button class="calc-btn operator" data-action="multiply">*</button>
-                    <button class="calc-btn backspace" data-action="backspace">←</button>
 
                     <button class="calc-btn digit">7</button>
                     <button class="calc-btn digit">8</button>
