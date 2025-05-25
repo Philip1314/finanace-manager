@@ -44,7 +44,6 @@ document.addEventListener('DOMContentLoaded', () => {
             switch (lowerCaseWhatKind) {
                 case 'salary': icon = '💸'; break;
                 case 'allowance': icon = '🎁'; break;
-                case 'savings': icon = '🏦'; break;
                 default: icon = '💰'; break;
             }
         } else if (lowerCaseType === 'expenses') {
@@ -60,185 +59,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         return { category, icon };
     }
-
-    // --- Dark Mode / Light Mode Toggle ---
-    const themeToggleButtons = document.querySelectorAll('.theme-toggle-button');
-
-    function applyTheme(theme) {
-        document.body.classList.remove('light-mode', 'dark-mode');
-        document.body.classList.add(theme);
-        localStorage.setItem('theme', theme); // Save preference
-
-        // Update button text/icon
-        themeToggleButtons.forEach(button => {
-            if (theme === 'dark-mode') {
-                button.textContent = '🌙'; // Moon for dark mode
-            } else {
-                button.textContent = '☀️'; // Sun for light mode
-            }
-        });
-    }
-
-    function toggleTheme() {
-        if (document.body.classList.contains('dark-mode')) {
-            applyTheme('light-mode');
-        } else {
-            applyTheme('dark-mode');
-        }
-    }
-
-    // Initialize theme based on localStorage or system preference
-    const savedTheme = localStorage.getItem('theme');
-    if (savedTheme) {
-        applyTheme(savedTheme);
-    } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-        applyTheme('dark-mode'); // System is in dark mode
-    } else {
-        applyTheme('light-mode'); // Default to light mode
-    }
-
-    themeToggleButtons.forEach(button => {
-        button.addEventListener('click', toggleTheme);
-    });
-
-    // --- Mini Calculator Logic ---
-    const calculatorOverlay = document.getElementById('calculatorOverlay');
-    const calculatorDisplay = document.getElementById('calculatorDisplay');
-    const calculatorButtons = document.querySelector('.calculator-buttons');
-    const closeCalculatorBtn = document.getElementById('closeCalculatorBtn');
-
-    let displayValue = '0';
-    let firstOperand = null;
-    let operator = null;
-    let waitingForSecondOperand = false;
-
-    function updateCalculatorDisplay() {
-        calculatorDisplay.textContent = displayValue;
-    }
-
-    function inputDigit(digit) {
-        if (waitingForSecondOperand === true) {
-            displayValue = digit;
-            waitingForSecondOperand = false;
-        } else {
-            displayValue = displayValue === '0' ? digit : displayValue + digit;
-        }
-        updateCalculatorDisplay();
-    }
-
-    function inputDecimal(dot) {
-        if (waitingForSecondOperand === true) {
-            displayValue = '0.';
-            waitingForSecondOperand = false;
-            updateCalculatorDisplay();
-            return;
-        }
-        if (!displayValue.includes(dot)) {
-            displayValue += dot;
-        }
-        updateCalculatorDisplay();
-    }
-
-    function handleOperator(nextOperator) {
-        const inputValue = parseFloat(displayValue);
-
-        if (operator && waitingForSecondOperand) {
-            operator = nextOperator;
-            return;
-        }
-
-        if (firstOperand === null) {
-            firstOperand = inputValue;
-        } else if (operator) {
-            const result = performCalculation[operator](firstOperand, inputValue);
-            displayValue = String(result);
-            firstOperand = result;
-        }
-
-        waitingForSecondOperand = true;
-        operator = nextOperator;
-        updateCalculatorDisplay();
-    }
-
-    const performCalculation = {
-        '/': (firstOperand, secondOperand) => firstOperand / secondOperand,
-        '*': (firstOperand, secondOperand) => firstOperand * secondOperand,
-        '+': (firstOperand, secondOperand) => firstOperand + secondOperand,
-        '-': (firstOperand, secondOperand) => firstOperand - secondOperand,
-        '=': (firstOperand, secondOperand) => secondOperand // For '=' button, the result is the second operand if no operator was active
-    };
-
-    function resetCalculator() {
-        displayValue = '0';
-        firstOperand = null;
-        operator = null;
-        waitingForSecondOperand = false;
-        updateCalculatorDisplay();
-    }
-
-    function backspace() {
-        if (displayValue.length > 1) {
-            displayValue = displayValue.slice(0, -1);
-        } else {
-            displayValue = '0';
-        }
-        updateCalculatorDisplay();
-    }
-
-    if (calculatorButtons) {
-        calculatorButtons.addEventListener('click', (event) => {
-            const { target } = event;
-            if (!target.matches('button')) {
-                return;
-            }
-
-            if (target.classList.contains('number')) {
-                inputDigit(target.textContent);
-                return;
-            }
-
-            if (target.classList.contains('decimal')) {
-                inputDecimal(target.textContent);
-                return;
-            }
-
-            if (target.classList.contains('operator')) {
-                handleOperator(target.dataset.action);
-                return;
-            }
-
-            if (target.classList.contains('equal')) {
-                handleOperator('=');
-                return;
-            }
-
-            if (target.classList.contains('clear')) {
-                resetCalculator();
-                return;
-            }
-
-            if (target.classList.contains('backspace')) {
-                backspace();
-                return;
-            }
-        });
-    }
-
-    // Open/Close calculator FABs
-    const openCalculatorFabs = document.querySelectorAll('.calc-fab-button');
-    openCalculatorFabs.forEach(fab => {
-        fab.addEventListener('click', () => {
-            calculatorOverlay.style.display = 'flex';
-            resetCalculator(); // Reset calculator state when opened
-        });
-    });
-
-    if (closeCalculatorBtn) {
-        closeCalculatorBtn.addEventListener('click', () => {
-            calculatorOverlay.style.display = 'none';
-        });
-    }
-
 
     // --- Dashboard Specific Logic (index.html) ---
     async function updateDashboard() {
@@ -280,11 +100,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             });
 
-            const netExpenseForDisplay = totalExpensesAmount; // Consider this as total spending for simplicity
+            const netExpenseForDisplay = totalExpensesAmount;
             document.getElementById('netExpenseValue').textContent = formatCurrency(netExpenseForDisplay);
 
             const remainingBalance = totalGainsAmount - totalExpensesAmount;
-            const totalIncomeOrBudget = totalGainsAmount; // Base for percentage calculation. If 0, handle to prevent NaN.
+            const totalIncomeOrBudget = totalGainsAmount;
 
             document.getElementById('remainingBalanceAmount').textContent = `${formatCurrency(remainingBalance)} of ${formatCurrency(totalIncomeOrBudget)}`;
 
@@ -304,11 +124,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 progressOffset = 0;
             } else if (displayPercentage > 0) {
                 progressOffset = circumference - (displayPercentage / 100) * circumference;
-                if (displayPercentage < 25) { // Change color if balance is low
+                if (displayPercentage < 25) {
                     progressColor = 'var(--accent-orange)';
                 }
-            } else { // 0% or negative balance
-                progressOffset = circumference; // Circle fully empty/red
+            } else {
+                progressOffset = circumference;
                 progressColor = 'var(--accent-red)';
             }
 
@@ -384,29 +204,24 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // --- Transactions Page Specific Logic (transactions.html & savings.html) ---
+    // --- Transactions Page Specific Logic (transactions.html) ---
     let allTransactionsData = []; // Store all fetched data for consistent filtering
 
-    async function fetchAndProcessTransactions(isSavingsPage = false) {
+    async function fetchAndProcessTransactions() {
         try {
             const response = await fetch(CSV_URL);
             const csv = await response.text();
-            allTransactionsData = parseCSV(csv);
+            allTransactionsData = parseCSV(csv); // Store raw data
 
-            if (!isSavingsPage) {
-                populateCategoryFilter();
-                const today = new Date();
-                const currentMonth = today.getMonth() + 1;
-                renderTransactions(currentMonth, '', null, null, false);
-            } else {
-                const today = new Date();
-                const currentMonth = today.getMonth() + 1;
-                renderTransactions(currentMonth, '', null, null, true);
-            }
-
+            // Populate category filter dropdown
+            populateCategoryFilter();
+            // Initial render with current month
+            const today = new Date();
+            const currentMonth = today.getMonth() + 1;
+            renderTransactions(currentMonth); // Initial render with current month
         } catch (error) {
-            console.error('Error fetching or processing CSV for transactions/savings:', error);
-            const transactionsListDiv = document.getElementById('transactionsList') || document.getElementById('savingsList');
+            console.error('Error fetching or processing CSV for transactions:', error);
+            const transactionsListDiv = document.getElementById('transactionsList');
             if (transactionsListDiv) {
                 transactionsListDiv.innerHTML = '<p style="text-align: center; color: var(--accent-red); padding: 2rem;">Error loading transactions. Please check the data source.</p>';
             }
@@ -417,6 +232,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const categoryFilterDropdown = document.getElementById('categoryFilterDropdown');
         if (!categoryFilterDropdown) return;
 
+        // Clear existing options except "All Categories"
         categoryFilterDropdown.innerHTML = '<option value="">All Categories</option>';
 
         const uniqueCategories = new Set();
@@ -424,19 +240,35 @@ document.addEventListener('DOMContentLoaded', () => {
             if (entry['What kind?']) {
                 uniqueCategories.add(entry['What kind?'].trim());
             }
+            if (entry.Type && entry.Type.toLowerCase() === 'gains' && entry['What kind?'].trim() === 'Salary') {
+                uniqueCategories.add('Salary'); // Explicitly add Salary for gains
+            }
+            if (entry.Type && entry.Type.toLowerCase() === 'gains' && entry['What kind?'].trim() === 'Allowance') {
+                uniqueCategories.add('Allowance'); // Explicitly add Allowance for gains
+            }
         });
 
+        // Sort categories alphabetically, add "Gains" to the top
         const sortedCategories = Array.from(uniqueCategories).sort();
-        const finalCategories = ['Gains', 'Expenses'];
-
+        const finalCategories = ['Gains']; // Start with Gains
         sortedCategories.forEach(cat => {
-            if (cat && !['salary', 'allowance', 'savings'].includes(cat.toLowerCase()) && !finalCategories.includes(cat)) {
+            // Avoid adding "Salary" or "Allowance" separately if "Gains" handles them broadly
+            // Or add specific ones like 'Food', 'Medicines', 'Shopping', etc.
+            if (!['salary', 'allowance'].includes(cat.toLowerCase())) {
                 finalCategories.push(cat);
             }
         });
 
+        // Add a specific 'Expenses' category if not already implicitly covered by 'Food', 'Medicines', etc.
+        // This makes filtering more robust if 'Type' is needed explicitly.
+        if (!finalCategories.includes('Expenses')) {
+             finalCategories.splice(1, 0, 'Expenses'); // Add 'Expenses' after 'Gains'
+        }
+
+
+        // Re-populate options, keeping 'All Categories' at the top
         finalCategories.forEach(category => {
-            if (category) {
+            if (category) { // Ensure no empty categories are added
                 const option = document.createElement('option');
                 option.value = category;
                 option.textContent = category;
@@ -445,15 +277,16 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    function renderTransactions(selectedMonth, selectedCategory = '', startDate = null, endDate = null, isSavingsPage = false) {
-        const targetListDiv = isSavingsPage ? document.getElementById('savingsList') : document.getElementById('transactionsList');
-        if (!targetListDiv) return;
+
+    function renderTransactions(selectedMonth, selectedCategory = '', startDate = null, endDate = null) {
+        const transactionsListDiv = document.getElementById('transactionsList');
+        if (!transactionsListDiv) return;
 
         let filteredData = allTransactionsData.filter(entry => {
             const amount = parseFloat(entry.Amount);
             const date = new Date(entry.Date);
             const entryType = entry.Type ? entry.Type.toLowerCase() : '';
-            const entryWhatKind = entry['What kind?'] ? entry['What kind?'].toLowerCase() : '';
+            const entryWhatKind = entry['What kind'] ? entry['What kind'].toLowerCase() : ''; // Use 'What kind' here
 
             if (isNaN(amount) || isNaN(date) || !entryType) {
                 console.warn('Skipping malformed entry:', entry);
@@ -463,37 +296,34 @@ document.addEventListener('DOMContentLoaded', () => {
             const entryDate = new Date(entry.Date);
             entryDate.setHours(0, 0, 0, 0);
 
-            // Special filtering for Savings Page
-            if (isSavingsPage) {
-                return entryType === 'gains' && entryWhatKind === 'savings';
-            }
-
-            // Month filtering
+            // Month filtering (always apply if a month button is active)
             if (selectedMonth && entryDate.getMonth() + 1 !== selectedMonth) {
                 return false;
             }
 
-            // Category filtering for Transactions Page
+            // Category filtering
             if (selectedCategory) {
                 const lowerCaseSelectedCategory = selectedCategory.toLowerCase();
-                const actualCategory = entry['What kind?'] ? entry['What kind?'].toLowerCase() : '';
-                const entryCategoryType = entry.Type ? entry.Type.toLowerCase() : '';
+                const actualCategory = entry['What kind'] ? entry['What kind'].toLowerCase() : '';
+                const entryCategoryType = entry.Type ? entry.Type.toLowerCase() : ''; // 'gains' or 'expenses'
 
                 if (lowerCaseSelectedCategory === 'gains') {
                     if (entryCategoryType !== 'gains') return false;
                 } else if (lowerCaseSelectedCategory === 'expenses') {
                     if (entryCategoryType !== 'expenses') return false;
                 } else if (actualCategory !== lowerCaseSelectedCategory) {
+                     // Specific category match, e.g., 'food', 'medicines'
                     return false;
                 }
             }
+
 
             // Date range filtering
             if (startDate && endDate) {
                 const start = new Date(startDate);
                 start.setHours(0, 0, 0, 0);
                 const end = new Date(endDate);
-                end.setHours(23, 59, 59, 999);
+                end.setHours(23, 59, 59, 999); // End of the day
 
                 if (entryDate < start || entryDate > end) {
                     return false;
@@ -505,7 +335,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         filteredData.sort((a, b) => new Date(b.Date) - new Date(a.Date));
 
-        targetListDiv.innerHTML = ''; // Clear existing content
+        transactionsListDiv.innerHTML = '';
 
         const groupedTransactions = {};
         const today = new Date();
@@ -613,39 +443,176 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 groupDiv.appendChild(itemDiv);
             });
-            targetListDiv.appendChild(groupDiv);
+            transactionsListDiv.appendChild(groupDiv);
         });
 
         if (filteredData.length === 0) {
-            let noDataMessage = 'No transactions found for the selected filters.';
-            if (isSavingsPage) {
-                 noDataMessage = 'No savings entries found. Add \'gains\' with \'What kind?\' as \'savings\' to your spreadsheet.';
-            }
-            targetListDiv.innerHTML = `<p style="text-align: center; color: var(--text-light); padding: 2rem;">${noDataMessage}</p>`;
+            transactionsListDiv.innerHTML = '<p style="text-align: center; color: var(--text-light); padding: 2rem;">No transactions found for the selected filters.</p>';
         }
     }
 
+    // --- Calculator Logic ---
+    const calculatorOverlay = document.getElementById('calculatorOverlay');
+    const calculatorDisplay = document.getElementById('calculatorDisplay');
+    const calculatorButtons = document.querySelector('.calculator-buttons');
+    const closeCalculatorButton = document.getElementById('closeCalculatorButton');
+    const openCalculatorFab = document.getElementById('openCalculatorFab');
+
+    let currentInput = '0';
+    let firstOperand = null;
+    let operator = null;
+    let waitingForSecondOperand = false;
+
+    function updateDisplay() {
+        calculatorDisplay.value = currentInput;
+    }
+
+    function resetCalculator() {
+        currentInput = '0';
+        firstOperand = null;
+        operator = null;
+        waitingForSecondOperand = false;
+    }
+
+    function inputDigit(digit) {
+        if (waitingForSecondOperand === true) {
+            currentInput = digit;
+            waitingForSecondOperand = false;
+        } else {
+            currentInput = currentInput === '0' ? digit : currentInput + digit;
+        }
+        updateDisplay();
+    }
+
+    function inputDecimal(dot) {
+        if (waitingForSecondOperand === true) {
+            currentInput = '0.';
+            waitingForSecondOperand = false;
+            updateDisplay();
+            return;
+        }
+        if (!currentInput.includes(dot)) {
+            currentInput += dot;
+        }
+        updateDisplay();
+    }
+
+    function handleOperator(nextOperator) {
+        const inputValue = parseFloat(currentInput);
+
+        if (operator && waitingForSecondOperand) {
+            operator = nextOperator;
+            return;
+        }
+
+        if (firstOperand === null) {
+            firstOperand = inputValue;
+        } else if (operator) {
+            const result = performCalculation[operator](firstOperand, inputValue);
+            currentInput = String(result);
+            firstOperand = result;
+        }
+
+        waitingForSecondOperand = true;
+        operator = nextOperator;
+        updateDisplay();
+    }
+
+    const performCalculation = {
+        '/': (firstOperand, secondOperand) => firstOperand / secondOperand,
+        '*': (firstOperand, secondOperand) => firstOperand * secondOperand,
+        '+': (firstOperand, secondOperand) => firstOperand + secondOperand,
+        '-': (firstOperand, secondOperand) => firstOperand - secondOperand,
+        '=': (firstOperand, secondOperand) => secondOperand // For equals, just display the second operand after operation
+    };
+
+    if (calculatorButtons) {
+        calculatorButtons.addEventListener('click', (event) => {
+            const { target } = event;
+            if (!target.matches('button')) {
+                return;
+            }
+
+            if (target.classList.contains('operator')) {
+                handleOperator(target.dataset.action);
+                return;
+            }
+
+            if (target.classList.contains('decimal')) {
+                inputDecimal(target.textContent);
+                return;
+            }
+
+            if (target.classList.contains('clear')) {
+                resetCalculator();
+                updateDisplay();
+                return;
+            }
+
+            if (target.classList.contains('backspace')) {
+                currentInput = calculatorDisplay.value.slice(0, -1) || '0';
+                updateDisplay();
+                return;
+            }
+
+            if (target.classList.contains('equals')) {
+                if (firstOperand === null || operator === null || waitingForSecondOperand) {
+                    return;
+                }
+                const inputValue = parseFloat(currentInput);
+                const result = performCalculation[operator](firstOperand, inputValue);
+                currentInput = String(result);
+                firstOperand = null; // Clear for next calculation
+                operator = null; // Clear operator
+                waitingForSecondOperand = true; // Ready for new input or chain operation
+                updateDisplay();
+                return;
+            }
+
+            inputDigit(target.textContent);
+        });
+    }
+
+    if (openCalculatorFab) {
+        openCalculatorFab.addEventListener('click', () => {
+            calculatorOverlay.classList.add('active');
+            resetCalculator(); // Reset calculator state when opening
+            updateDisplay();
+        });
+    }
+
+    if (closeCalculatorButton) {
+        closeCalculatorButton.addEventListener('click', () => {
+            calculatorOverlay.classList.remove('active');
+        });
+    }
+
+    // Close calculator if clicked outside (on overlay)
+    if (calculatorOverlay) {
+        calculatorOverlay.addEventListener('click', (event) => {
+            if (event.target === calculatorOverlay) {
+                calculatorOverlay.classList.remove('active');
+            }
+        });
+    }
+
+
     // --- Common Logic & Event Listeners ---
 
-    // Differentiating FABs for 'Add Entry'
-    const addEntryFab = document.getElementById('addEntryFab'); // Main page
-    const addEntryFabTransactions = document.getElementById('addEntryFabTransactions'); // Transactions page
-    const addEntryFabSavings = document.getElementById('addEntryFabSavings'); // Savings page
-
-    [addEntryFab, addEntryFabTransactions, addEntryFabSavings].forEach(fab => {
-        if (fab) {
-            fab.addEventListener('click', () => {
-                window.open(GOOGLE_FORM_URL, '_blank');
-            });
-        }
-    });
+    const addTransactionFab = document.getElementById('addTransactionFab');
+    if (addTransactionFab) {
+        addTransactionFab.addEventListener('click', () => {
+            window.open(GOOGLE_FORM_URL, '_blank');
+        });
+    }
 
     if (document.getElementById('dashboard-page')) {
         updateDashboard();
     } else if (document.getElementById('transactions-page')) {
         const today = new Date();
-        let currentMonth = today.getMonth() + 1;
+        let currentMonth = today.getMonth() + 1; // Default to current month
 
+        // Get filter elements
         const filterButton = document.getElementById('filterButton');
         const filterOptionsContainer = document.getElementById('filterOptionsContainer');
         const categoryFilterDropdown = document.getElementById('categoryFilterDropdown');
@@ -654,35 +621,40 @@ document.addEventListener('DOMContentLoaded', () => {
         const applyFiltersButton = document.getElementById('applyFiltersButton');
         const clearFiltersButton = document.getElementById('clearFiltersButton');
 
-
+        // Event listener for main Filter button (toggle visibility)
         if (filterButton) {
             filterButton.addEventListener('click', () => {
                 filterOptionsContainer.style.display = filterOptionsContainer.style.display === 'flex' ? 'none' : 'flex';
             });
         }
 
+        // Apply Filters button click
         if (applyFiltersButton) {
             applyFiltersButton.addEventListener('click', () => {
                 const selectedCategory = categoryFilterDropdown.value;
-                const startDate = startDateInput.value;
-                const endDate = endDateInput.value;
+                const startDate = startDateInput.value; // Will be empty string if not set
+                const endDate = endDateInput.value; // Will be empty string if not set
 
+                // Get the currently active month button's month value
                 const activeMonthButton = document.querySelector('.month-button.active');
-                currentMonth = activeMonthButton ? parseInt(activeMonthButton.dataset.month) : null;
+                currentMonth = activeMonthButton ? parseInt(activeMonthButton.dataset.month) : null; // Use null if no specific month is active (e.g., custom date filter takes precedence)
 
-                const finalMonth = (startDate || endDate) ? null : currentMonth;
+                // If custom dates are selected, override month filter
+                const finalMonth = (startDate || endDate) ? null : currentMonth; // If dates are present, don't filter by month
 
-                renderTransactions(finalMonth, selectedCategory, startDate, endDate, false);
-                filterOptionsContainer.style.display = 'none';
+                renderTransactions(finalMonth, selectedCategory, startDate, endDate);
+                filterOptionsContainer.style.display = 'none'; // Hide filters after applying
             });
         }
 
+        // Clear Filters button click
         if (clearFiltersButton) {
             clearFiltersButton.addEventListener('click', () => {
-                categoryFilterDropdown.value = '';
-                startDateInput.value = '';
-                endDateInput.value = '';
+                categoryFilterDropdown.value = ''; // Reset dropdown
+                startDateInput.value = ''; // Clear date inputs
+                endDateInput.value = ''; // Clear date inputs
 
+                // Re-activate current month button and re-render
                 const today = new Date();
                 currentMonth = today.getMonth() + 1;
                 const monthButtons = document.querySelectorAll('.month-button');
@@ -691,11 +663,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (currentMonthBtn) {
                     currentMonthBtn.classList.add('active');
                 }
-                renderTransactions(currentMonth, '', null, null, false);
-                filterOptionsContainer.style.display = 'none';
+                renderTransactions(currentMonth); // Render with only current month filter
+                filterOptionsContainer.style.display = 'none'; // Hide filters
             });
         }
 
+
+        // Set initial active month button
         const monthButtons = document.querySelectorAll('.month-button');
         monthButtons.forEach(button => {
             if (parseInt(button.dataset.month) === currentMonth) {
@@ -703,6 +677,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
+        // Set date in profile icon on transactions page
         const profileDateDisplay = document.getElementById('profileDateDisplay');
         if (profileDateDisplay) {
             const monthName = today.toLocaleDateString('en-US', { month: 'short' });
@@ -710,28 +685,22 @@ document.addEventListener('DOMContentLoaded', () => {
             profileDateDisplay.innerHTML = `<span>${monthName}</span><span>${dayOfMonth}</span>`;
         }
 
+        // Add event listeners for month buttons
         monthButtons.forEach(button => {
             button.addEventListener('click', function() {
                 monthButtons.forEach(btn => btn.classList.remove('active'));
                 this.classList.add('active');
-                currentMonth = parseInt(this.dataset.month);
+                currentMonth = parseInt(this.dataset.month); // Update currentMonth
+                // Clear custom date filters when a month is selected
                 startDateInput.value = '';
                 endDateInput.value = '';
-                categoryFilterDropdown.value = '';
-                renderTransactions(currentMonth, '', null, null, false);
-                filterOptionsContainer.style.display = 'none';
+                categoryFilterDropdown.value = ''; // Clear category filter too
+                renderTransactions(currentMonth);
+                filterOptionsContainer.style.display = 'none'; // Hide filters after month selection
             });
         });
 
-        fetchAndProcessTransactions(false);
-    } else if (document.getElementById('savings-page')) {
-        const today = new Date();
-        const profileDateDisplaySavings = document.getElementById('profileDateDisplaySavings');
-        if (profileDateDisplaySavings) {
-            const monthName = today.toLocaleDateString('en-US', { month: 'short' });
-            const dayOfMonth = today.getDate();
-            profileDateDisplaySavings.innerHTML = `<span>${monthName}</span><span>${dayOfMonth}</span>`;
-        }
-        fetchAndProcessTransactions(true);
+        // Initial data fetch and render for transactions page
+        fetchAndProcessTransactions();
     }
 });
