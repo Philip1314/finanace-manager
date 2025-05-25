@@ -44,7 +44,7 @@ document.addEventListener('DOMContentLoaded', () => {
             switch (lowerCaseWhatKind) {
                 case 'salary': icon = '💸'; break;
                 case 'allowance': icon = '🎁'; break;
-                case 'savings': icon = '🏦'; break; // New icon for savings
+                case 'savings': icon = '🏦'; break; // Added icon for savings gains
                 default: icon = '💰'; break;
             }
         } else if (lowerCaseType === 'expenses') {
@@ -54,7 +54,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 case 'online shopping': category = 'Shopping'; icon = '🛍️'; break;
                 case 'transportation': category = 'Transportation'; icon = '🚌'; break;
                 case 'utility bills': category = 'Utility Bills'; icon = '💡'; break;
-                case 'allowance': category = 'Misc'; icon = '🚶'; break;
+                case 'allowance': category = 'Misc'; icon = '🚶'; break; // Assuming allowance as an expense falls under Misc
                 default: category = 'Misc'; icon = '✨'; break;
             }
         }
@@ -62,67 +62,20 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- Dashboard Specific Logic (index.html) ---
-    let allDashboardData = []; // Store all fetched data for dashboard filters
-
-    async function updateDashboard(selectedCategory = '', startDate = null, endDate = null) {
+    async function updateDashboard() {
         if (!document.getElementById('dashboard-page')) return;
 
         try {
-            if (allDashboardData.length === 0) { // Fetch only if not already fetched
-                const response = await fetch(CSV_URL);
-                const csv = await response.text();
-                allDashboardData = parseCSV(csv);
-                populateMainCategoryFilter(); // Populate filter dropdown after fetching
-            }
-
-            let filteredData = allDashboardData.filter(entry => {
-                const amount = parseFloat(entry.Amount);
-                const date = new Date(entry.Date);
-                const entryType = entry.Type ? entry.Type.toLowerCase() : '';
-                const entryWhatKind = entry['What kind?'] ? entry['What kind?'].toLowerCase() : '';
-
-                if (isNaN(amount) || isNaN(date) || !entryType) {
-                    console.warn('Dashboard - Skipping malformed entry:', entry);
-                    return false;
-                }
-
-                const entryDate = new Date(entry.Date);
-                entryDate.setHours(0, 0, 0, 0);
-
-                // Category filtering
-                if (selectedCategory) {
-                    const lowerCaseSelectedCategory = selectedCategory.toLowerCase();
-                    if (lowerCaseSelectedCategory === 'gains') {
-                        if (entryType !== 'gains') return false;
-                    } else if (lowerCaseSelectedCategory === 'expenses') {
-                        if (entryType !== 'expenses') return false;
-                    } else if (entryWhatKind !== lowerCaseSelectedCategory) {
-                        return false;
-                    }
-                }
-
-                // Date range filtering
-                if (startDate && endDate) {
-                    const start = new Date(startDate);
-                    start.setHours(0, 0, 0, 0);
-                    const end = new Date(endDate);
-                    end.setHours(23, 59, 59, 999);
-
-                    if (entryDate < start || entryDate > end) {
-                        return false;
-                    }
-                }
-                return true;
-            });
-
+            const response = await fetch(CSV_URL);
+            const csv = await response.text();
+            const data = parseCSV(csv);
 
             let totalExpensesAmount = 0;
             let totalGainsAmount = 0;
-            let totalSavingsAmount = 0; // New variable for savings
 
             const expenseCategoriesForChart = { Food: 0, Medicines: 0, Shopping: 0, Misc: 0 };
 
-            filteredData.forEach(entry => { // Use filteredData
+            data.forEach(entry => {
                 const amount = parseFloat(entry.Amount);
                 const entryType = entry.Type ? entry.Type.toLowerCase() : '';
                 const entryWhatKind = entry['What kind?'] ? entry['What kind?'].toLowerCase() : '';
@@ -145,18 +98,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 } else if (entryType === 'gains') {
                     totalGainsAmount += amount;
-                    if (entryWhatKind === 'savings') { // Identify savings entries
-                        totalSavingsAmount += amount;
-                    }
                 }
             });
 
-            const netExpenseForDisplay = totalExpensesAmount;
+            const netExpenseForDisplay = totalExpensesAmount; // Changed from totalGainsAmount - totalExpensesAmount
             document.getElementById('netExpenseValue').textContent = formatCurrency(netExpenseForDisplay);
-            document.getElementById('totalSavingsAmount').textContent = formatCurrency(totalSavingsAmount); // Update savings amount
 
             const remainingBalance = totalGainsAmount - totalExpensesAmount;
-            const totalIncomeOrBudget = totalGainsAmount;
+            const totalIncomeOrBudget = totalGainsAmount; // Base for percentage calculation
 
             document.getElementById('remainingBalanceAmount').textContent = `${formatCurrency(remainingBalance)} of ${formatCurrency(totalIncomeOrBudget)}`;
 
@@ -179,8 +128,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (displayPercentage < 25) {
                     progressColor = 'var(--accent-orange)';
                 }
-            } else {
-                progressOffset = circumference;
+            } else { // 0% or negative balance
+                progressOffset = circumference; // Circle fully empty/red
                 progressColor = 'var(--accent-red)';
             }
 
@@ -224,14 +173,14 @@ document.addEventListener('DOMContentLoaded', () => {
                         datasets: [{
                             data: categoryAmounts,
                             backgroundColor: chartColors,
-                            borderColor: 'var(--card-bg)', // Set border to white
-                            borderWidth: 8, // Thicker border
+                            borderColor: 'var(--card-bg)',
+                            borderWidth: 4,
                         }]
                     },
                     options: {
                         responsive: true,
                         maintainAspectRatio: false,
-                        cutout: '70%', // Slightly adjust cutout for thickness
+                        cutout: '80%',
                         plugins: {
                             legend: { display: false },
                             tooltip: {
@@ -253,71 +202,35 @@ document.addEventListener('DOMContentLoaded', () => {
             console.error('Error fetching or processing CSV for dashboard:', error);
             if (document.getElementById('netExpenseValue')) document.getElementById('netExpenseValue').textContent = '₱ Error';
             if (document.getElementById('remainingBalanceAmount')) document.getElementById('remainingBalanceAmount').textContent = '₱ Error';
-            if (document.getElementById('totalSavingsAmount')) document.getElementById('totalSavingsAmount').textContent = '₱ Error';
         }
     }
 
-    function populateMainCategoryFilter() {
-        const mainCategoryFilterDropdown = document.getElementById('mainCategoryFilterDropdown');
-        if (!mainCategoryFilterDropdown) return;
-
-        mainCategoryFilterDropdown.innerHTML = '<option value="">All Categories</option>';
-
-        const uniqueCategories = new Set();
-        allDashboardData.forEach(entry => {
-            if (entry['What kind?'] && entry.Type && entry.Type.toLowerCase() === 'expenses') {
-                uniqueCategories.add(entry['What kind?'].trim());
-            } else if (entry.Type && entry.Type.toLowerCase() === 'gains') {
-                uniqueCategories.add(entry['What kind?'].trim()); // Add all 'What kind' for gains
-            }
-        });
-
-        const sortedCategories = Array.from(uniqueCategories).sort();
-
-        // Add specific "type" filters if needed
-        const typeFilters = [];
-        if (allDashboardData.some(entry => entry.Type && entry.Type.toLowerCase() === 'gains')) {
-            typeFilters.push('Gains');
-        }
-        if (allDashboardData.some(entry => entry.Type && entry.Type.toLowerCase() === 'expenses')) {
-            typeFilters.push('Expenses');
-        }
-
-        typeFilters.forEach(type => {
-            const option = document.createElement('option');
-            option.value = type;
-            option.textContent = type;
-            mainCategoryFilterDropdown.appendChild(option);
-        });
-
-        sortedCategories.forEach(category => {
-            if (category && !['salary', 'allowance', 'savings'].includes(category.toLowerCase())) { // Avoid duplicates if already covered by "Gains"
-                const option = document.createElement('option');
-                option.value = category;
-                option.textContent = category;
-                mainCategoryFilterDropdown.appendChild(option);
-            }
-        });
-    }
-
-    // --- Transactions Page Specific Logic (transactions.html) ---
+    // --- Transactions Page Specific Logic (transactions.html & savings.html) ---
     let allTransactionsData = []; // Store all fetched data for consistent filtering
 
-    async function fetchAndProcessTransactions() {
+    async function fetchAndProcessTransactions(isSavingsPage = false) { // Added isSavingsPage parameter
         try {
             const response = await fetch(CSV_URL);
             const csv = await response.text();
             allTransactionsData = parseCSV(csv); // Store raw data
 
-            // Populate category filter dropdown
-            populateCategoryFilter();
-            // Initial render with current month
-            const today = new Date();
-            const currentMonth = today.getMonth() + 1;
-            renderTransactions(currentMonth); // Initial render with current month
+            if (!isSavingsPage) { // Only populate filters on the transactions page
+                // Populate category filter dropdown
+                populateCategoryFilter();
+                // Initial render with current month
+                const today = new Date();
+                const currentMonth = today.getMonth() + 1;
+                renderTransactions(currentMonth, '', null, null, false); // Pass false for isSavingsPage
+            } else {
+                // For savings page, directly render savings transactions
+                const today = new Date();
+                const currentMonth = today.getMonth() + 1; // Not used for filtering, but for date display
+                renderTransactions(currentMonth, '', null, null, true); // Pass true for isSavingsPage
+            }
+
         } catch (error) {
-            console.error('Error fetching or processing CSV for transactions:', error);
-            const transactionsListDiv = document.getElementById('transactionsList');
+            console.error('Error fetching or processing CSV for transactions/savings:', error);
+            const transactionsListDiv = document.getElementById('transactionsList') || document.getElementById('savingsList'); // Check both
             if (transactionsListDiv) {
                 transactionsListDiv.innerHTML = '<p style="text-align: center; color: var(--accent-red); padding: 2rem;">Error loading transactions. Please check the data source.</p>';
             }
@@ -336,34 +249,17 @@ document.addEventListener('DOMContentLoaded', () => {
             if (entry['What kind?']) {
                 uniqueCategories.add(entry['What kind?'].trim());
             }
-            if (entry.Type && entry.Type.toLowerCase() === 'gains' && entry['What kind?'].trim() === 'Salary') {
-                uniqueCategories.add('Salary'); // Explicitly add Salary for gains
-            }
-            if (entry.Type && entry.Type.toLowerCase() === 'gains' && entry['What kind?'].trim() === 'Allowance') {
-                uniqueCategories.add('Allowance'); // Explicitly add Allowance for gains
-            }
-            if (entry.Type && entry.Type.toLowerCase() === 'gains' && entry['What kind?'].trim() === 'Savings') {
-                uniqueCategories.add('Savings'); // Explicitly add Savings
-            }
         });
 
-        // Sort categories alphabetically, add "Gains" to the top
+        // Sort categories alphabetically
         const sortedCategories = Array.from(uniqueCategories).sort();
-        const finalCategories = ['Gains']; // Start with Gains
+        const finalCategories = ['Gains', 'Expenses']; // Always include these at the top
+
         sortedCategories.forEach(cat => {
-            // Avoid adding "Salary" or "Allowance" separately if "Gains" handles them broadly
-            // Or add specific ones like 'Food', 'Medicines', 'Shopping', etc.
-            if (!['salary', 'allowance', 'gains', 'expenses', 'savings'].includes(cat.toLowerCase())) { // Exclude 'gains' and 'expenses' as they are type filters
+            if (cat && !['salary', 'allowance', 'savings'].includes(cat.toLowerCase()) && !finalCategories.includes(cat)) {
                 finalCategories.push(cat);
             }
         });
-
-        // Add a specific 'Expenses' category if not already implicitly covered by 'Food', 'Medicines', etc.
-        // This makes filtering more robust if 'Type' is needed explicitly.
-        if (!finalCategories.includes('Expenses')) {
-             finalCategories.splice(1, 0, 'Expenses'); // Add 'Expenses' after 'Gains'
-        }
-
 
         // Re-populate options, keeping 'All Categories' at the top
         finalCategories.forEach(category => {
@@ -378,39 +274,303 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     function renderTransactions(selectedMonth, selectedCategory = '', startDate = null, endDate = null, isSavingsPage = false) {
-        const transactionsListDiv = document.getElementById('transactionsList');
-        if (!transactionsListDiv) return;
+        const targetListDiv = isSavingsPage ? document.getElementById('savingsList') : document.getElementById('transactionsList');
+        if (!targetListDiv) return;
 
-        let dataToFilter = isSavingsPage ? allDashboardData : allTransactionsData; // Use allDashboardData for savings page
-
-        let filteredData = dataToFilter.filter(entry => {
+        let filteredData = allTransactionsData.filter(entry => {
             const amount = parseFloat(entry.Amount);
             const date = new Date(entry.Date);
             const entryType = entry.Type ? entry.Type.toLowerCase() : '';
-            const entryWhatKind = entry['What kind?'] ? entry['What kind?'].toLowerCase() : ''; // Use 'What kind' here
+            const entryWhatKind = entry['What kind?'] ? entry['What kind?'].toLowerCase() : ''; // Corrected to 'What kind?'
 
             if (isNaN(amount) || isNaN(date) || !entryType) {
                 console.warn('Skipping malformed entry:', entry);
                 return false;
             }
 
-            // If it's the savings page, only show 'savings' entries under 'gains'
-            if (isSavingsPage) {
-                if (!(entryType === 'gains' && entryWhatKind === 'savings')) {
-                    return false;
-                }
-            }
-
-
             const entryDate = new Date(entry.Date);
             entryDate.setHours(0, 0, 0, 0);
 
-            // Month filtering (always apply if a month button is active)
+            // Special filtering for Savings Page
+            if (isSavingsPage) {
+                // For savings page, ONLY show entries where Type is 'gains' AND 'What kind?' is 'savings'
+                return entryType === 'gains' && entryWhatKind === 'savings';
+            }
+
+            // Month filtering (always apply if a month button is active on transactions page)
             if (selectedMonth && entryDate.getMonth() + 1 !== selectedMonth) {
                 return false;
             }
 
-            // Category filtering
+            // Category filtering for Transactions Page
             if (selectedCategory) {
                 const lowerCaseSelectedCategory = selectedCategory.toLowerCase();
-                const actualCa
+                const actualCategory = entry['What kind?'] ? entry['What kind?'].toLowerCase() : ''; // Corrected to 'What kind?'
+                const entryCategoryType = entry.Type ? entry.Type.toLowerCase() : ''; // 'gains' or 'expenses'
+
+                if (lowerCaseSelectedCategory === 'gains') {
+                    if (entryCategoryType !== 'gains') return false;
+                } else if (lowerCaseSelectedCategory === 'expenses') {
+                    if (entryCategoryType !== 'expenses') return false;
+                } else if (actualCategory !== lowerCaseSelectedCategory) {
+                     // Specific category match, e.g., 'food', 'medicines'
+                    return false;
+                }
+            }
+
+            // Date range filtering
+            if (startDate && endDate) {
+                const start = new Date(startDate);
+                start.setHours(0, 0, 0, 0);
+                const end = new Date(endDate);
+                end.setHours(23, 59, 59, 999); // End of the day
+
+                if (entryDate < start || entryDate > end) {
+                    return false;
+                }
+            }
+
+            return true;
+        });
+
+        filteredData.sort((a, b) => new Date(b.Date) - new Date(a.Date));
+
+        targetListDiv.innerHTML = ''; // Clear existing content
+
+        const groupedTransactions = {};
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        const yesterday = new Date(today);
+        yesterday.setDate(today.getDate() - 1);
+
+        filteredData.forEach(entry => {
+            const entryDate = new Date(entry.Date);
+            entryDate.setHours(0, 0, 0, 0);
+
+            let dateHeader;
+            if (entryDate.getTime() === today.getTime()) {
+                dateHeader = 'Today';
+            } else if (entryDate.getTime() === yesterday.getTime()) {
+                dateHeader = 'Yesterday';
+            } else {
+                dateHeader = entryDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+            }
+
+            if (!groupedTransactions[dateHeader]) {
+                groupedTransactions[dateHeader] = [];
+            }
+            groupedTransactions[dateHeader].push(entry);
+        });
+
+        const sortedDates = Object.keys(groupedTransactions).sort((a, b) => {
+            if (a === 'Today') return -1;
+            if (b === 'Today') return 1;
+            if (a === 'Yesterday') return -1;
+            if (b === 'Yesterday') return 1;
+            const dateA = new Date(a);
+            const dateB = new Date(b);
+            if (!isNaN(dateA) && !isNaN(dateB)) {
+                return dateB - dateA;
+            }
+            return 0;
+        });
+
+        sortedDates.forEach(dateHeader => {
+            const groupDiv = document.createElement('div');
+            groupDiv.classList.add('transaction-group');
+
+            const headerDiv = document.createElement('div');
+            headerDiv.classList.add('transaction-date-header');
+            headerDiv.textContent = dateHeader;
+            groupDiv.appendChild(headerDiv);
+
+            groupedTransactions[dateHeader].sort((a, b) => {
+                const timeA = a.Time ? a.Time.split(':').map(Number) : [0, 0, 0];
+                const timeB = b.Time ? b.Time.split(':').map(Number) : [0, 0, 0];
+                if (timeA[0] !== timeB[0]) return timeA[0] - timeB[0];
+                if (timeA[1] !== timeB[1]) return timeA[1] - timeB[1];
+                return timeA[2] - timeB[2];
+            });
+
+            groupedTransactions[dateHeader].forEach(entry => {
+                const itemDiv = document.createElement('div');
+                itemDiv.classList.add('transaction-item');
+
+                const categoryIconDiv = document.createElement('div');
+                categoryIconDiv.classList.add('transaction-category-icon');
+
+                const { category: mappedCategory, icon: categoryIcon } = mapCategoryAndIcon(entry.Type, entry['What kind?']); // Corrected to 'What kind?'
+
+                if (entry.Type && entry.Type.toLowerCase() === 'gains') {
+                     categoryIconDiv.classList.add('category-gain');
+                } else {
+                    switch (mappedCategory.toLowerCase()) {
+                        case 'food': categoryIconDiv.classList.add('category-food'); break;
+                        case 'medicines': categoryIconDiv.classList.add('category-medicines'); break;
+                        case 'shopping': categoryIconDiv.classList.add('category-shopping'); break;
+                        default: categoryIconDiv.classList.add('category-misc'); break;
+                    }
+                }
+
+                categoryIconDiv.textContent = categoryIcon;
+                itemDiv.appendChild(categoryIconDiv);
+
+                const detailsDiv = document.createElement('div');
+                detailsDiv.classList.add('transaction-details');
+
+                const nameSpan = document.createElement('span');
+                nameSpan.classList.add('transaction-name');
+                nameSpan.textContent = entry.Description && entry.Description.trim() !== '' ? entry.Description : (entry['What kind?'] && entry['What kind?'].trim() !== '' ? entry['What kind?'] : 'N/A'); // Corrected to 'What kind?'
+                detailsDiv.appendChild(nameSpan);
+
+                const timeSpan = document.createElement('span');
+                timeSpan.classList.add('transaction-time');
+                timeSpan.textContent = entry.Time || '';
+                detailsDiv.appendChild(timeSpan);
+
+                itemDiv.appendChild(detailsDiv);
+
+                const amountSpan = document.createElement('span');
+                amountSpan.classList.add('transaction-amount');
+                amountSpan.textContent = formatCurrency(entry.Amount);
+                if (entry.Type && entry.Type.toLowerCase() === 'expenses') {
+                    amountSpan.classList.add('expense');
+                } else if (entry.Type && entry.Type.toLowerCase() === 'gains') {
+                    amountSpan.classList.add('gain');
+                }
+                itemDiv.appendChild(amountSpan);
+
+                groupDiv.appendChild(itemDiv);
+            });
+            targetListDiv.appendChild(groupDiv);
+        });
+
+        if (filteredData.length === 0) {
+            let noDataMessage = 'No transactions found for the selected filters.';
+            if (isSavingsPage) {
+                 noDataMessage = 'No savings entries found. Add \'gains\' with \'What kind?\' as \'savings\' to your spreadsheet.';
+            }
+            targetListDiv.innerHTML = `<p style="text-align: center; color: var(--text-light); padding: 2rem;">${noDataMessage}</p>`;
+        }
+    }
+
+    // --- Common Logic & Event Listeners ---
+
+    const fabButton = document.querySelector('.fab-button');
+    if (fabButton) {
+        fabButton.addEventListener('click', () => {
+            window.open(GOOGLE_FORM_URL, '_blank');
+        });
+    }
+
+    if (document.getElementById('dashboard-page')) {
+        updateDashboard();
+    } else if (document.getElementById('transactions-page')) {
+        const today = new Date();
+        let currentMonth = today.getMonth() + 1; // Default to current month
+
+        // Get filter elements
+        const filterButton = document.getElementById('filterButton');
+        const filterOptionsContainer = document.getElementById('filterOptionsContainer');
+        const categoryFilterDropdown = document.getElementById('categoryFilterDropdown');
+        const startDateInput = document.getElementById('startDateInput');
+        const endDateInput = document.getElementById('endDateInput');
+        const applyFiltersButton = document.getElementById('applyFiltersButton');
+        const clearFiltersButton = document.getElementById('clearFiltersButton');
+
+        // Event listener for main Filter button (toggle visibility)
+        if (filterButton) {
+            filterButton.addEventListener('click', () => {
+                filterOptionsContainer.style.display = filterOptionsContainer.style.display === 'flex' ? 'none' : 'flex';
+            });
+        }
+
+        // Apply Filters button click
+        if (applyFiltersButton) {
+            applyFiltersButton.addEventListener('click', () => {
+                const selectedCategory = categoryFilterDropdown.value;
+                const startDate = startDateInput.value; // Will be empty string if not set
+                const endDate = endDateInput.value; // Will be empty string if not set
+
+                // Get the currently active month button's month value
+                const activeMonthButton = document.querySelector('.month-button.active');
+                currentMonth = activeMonthButton ? parseInt(activeMonthButton.dataset.month) : null; // Use null if no specific month is active (e.g., custom date filter takes precedence)
+
+                // If custom dates are selected, override month filter
+                const finalMonth = (startDate || endDate) ? null : currentMonth; // If dates are present, don't filter by month
+
+                renderTransactions(finalMonth, selectedCategory, startDate, endDate, false); // Pass false for isSavingsPage
+                filterOptionsContainer.style.display = 'none'; // Hide filters after applying
+            });
+        }
+
+        // Clear Filters button click
+        if (clearFiltersButton) {
+            clearFiltersButton.addEventListener('click', () => {
+                categoryFilterDropdown.value = ''; // Reset dropdown
+                startDateInput.value = ''; // Clear date inputs
+                endDateInput.value = ''; // Clear date inputs
+
+                // Re-activate current month button and re-render
+                const today = new Date();
+                currentMonth = today.getMonth() + 1;
+                const monthButtons = document.querySelectorAll('.month-button');
+                monthButtons.forEach(btn => btn.classList.remove('active'));
+                const currentMonthBtn = document.querySelector(`.month-button[data-month="${currentMonth}"]`);
+                if (currentMonthBtn) {
+                    currentMonthBtn.classList.add('active');
+                }
+                renderTransactions(currentMonth, '', null, null, false); // Render with only current month filter, pass false for isSavingsPage
+                filterOptionsContainer.style.display = 'none'; // Hide filters
+            });
+        }
+
+
+        // Set initial active month button
+        const monthButtons = document.querySelectorAll('.month-button');
+        monthButtons.forEach(button => {
+            if (parseInt(button.dataset.month) === currentMonth) {
+                button.classList.add('active');
+            }
+        });
+
+        // Set date in profile icon on transactions page
+        const profileDateDisplay = document.getElementById('profileDateDisplay');
+        if (profileDateDisplay) {
+            const monthName = today.toLocaleDateString('en-US', { month: 'short' });
+            const dayOfMonth = today.getDate();
+            profileDateDisplay.innerHTML = `<span>${monthName}</span><span>${dayOfMonth}</span>`;
+        }
+
+        // Add event listeners for month buttons
+        monthButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                monthButtons.forEach(btn => btn.classList.remove('active'));
+                this.classList.add('active');
+                currentMonth = parseInt(this.dataset.month); // Update currentMonth
+                // Clear custom date filters when a month is selected
+                startDateInput.value = '';
+                endDateInput.value = '';
+                categoryFilterDropdown.value = ''; // Clear category filter too
+                renderTransactions(currentMonth, '', null, null, false); // Pass false for isSavingsPage
+                filterOptionsContainer.style.display = 'none'; // Hide filters after month selection
+            });
+        });
+
+        // Initial data fetch and render for transactions page
+        fetchAndProcessTransactions(false); // Call with false for transactions page
+    } else if (document.getElementById('savings-page')) { // Added logic for savings page
+        const today = new Date();
+        // Set date in profile icon on savings page
+        const profileDateDisplaySavings = document.getElementById('profileDateDisplaySavings');
+        if (profileDateDisplaySavings) {
+            const monthName = today.toLocaleDateString('en-US', { month: 'short' });
+            const dayOfMonth = today.getDate();
+            profileDateDisplaySavings.innerHTML = `<span>${monthName}</span><span>${dayOfMonth}</span>`;
+        }
+
+        // Initial data fetch and render for savings page
+        fetchAndProcessTransactions(true); // Call with true for savings page
+    }
+});
