@@ -13,7 +13,11 @@
         <header class="header">
             <a href="#" class="back-arrow" style="visibility: hidden; opacity: 0;">&larr;</a>
             <h1>Expense Manager</h1>
-            <div class="profile-icon">P</div>
+            <div class="header-right-icons">
+                <button id="theme-toggle" class="icon-button theme-toggle-button">
+                    ☀️ </button>
+                <div class="profile-icon">P</div>
+            </div>
         </header>
 
         <main class="main-content">
@@ -60,6 +64,14 @@
                 <a href="transactions.html" class="arrow-link">&gt;</a>
             </section>
 
+            <section class="card savings-promo-card">
+                <div class="promo-text">
+                    <h2>Track your Savings!</h2>
+                    <a href="savings.html" class="button">View Savings</a>
+                </div>
+                <img src="https://via.placeholder.com/100x100?text=Savings" alt="Savings Illustration" class="card-illustration">
+            </section>
+
             <section class="card transactions-promo-card">
                 <div class="promo-text">
                     <h2>Transactions on your hands!</h2>
@@ -70,7 +82,41 @@
         </main>
     </div>
 
-    <button class="fab-button">+</button>
+    <div class="calculator-overlay" id="calculatorOverlay">
+        <div class="calculator-card">
+            <div class="calculator-display" id="calculatorDisplay">0</div>
+            <div class="calculator-buttons">
+                <button class="calc-btn clear" data-action="clear">C</button>
+                <button class="calc-btn operator" data-action="divide">/</button>
+                <button class="calc-btn operator" data-action="multiply">*</button>
+                <button class="calc-btn backspace" data-action="backspace">&larr;</button>
+
+                <button class="calc-btn number">7</button>
+                <button class="calc-btn number">8</button>
+                <button class="calc-btn number">9</button>
+                <button class="calc-btn operator" data-action="subtract">-</button>
+
+                <button class="calc-btn number">4</button>
+                <button class="calc-btn number">5</button>
+                <button class="calc-btn number">6</button>
+                <button class="calc-btn operator" data-action="add">+</button>
+
+                <button class="calc-btn number">1</button>
+                <button class="calc-btn number">2</button>
+                <button class="calc-btn number">3</button>
+                <button class="calc-btn equal" data-action="calculate">=</button>
+
+                <button class="calc-btn number zero">0</button>
+                <button class="calc-btn decimal">.</button>
+            </div>
+            <button class="close-calculator-btn" id="closeCalculatorBtn">Close</button>
+        </div>
+    </div>
+
+
+    <button class="fab-button" id="addEntryFab">+</button>
+    <button class="fab-button calc-fab-button" id="openCalculatorFab">🧮</button>
+
 
     <script src="script.js"></script>
 </body>
