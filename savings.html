@@ -12,13 +12,18 @@
         <header class="header">
             <a href="index.html" class="back-arrow">&larr;</a>
             <h1>My Savings</h1>
-            <div class="profile-icon" id="profileDateDisplaySavings"></div>
+            <div class="header-right-icons">
+                <button id="theme-toggle-savings" class="icon-button theme-toggle-button">
+                    ☀️
+                </button>
+                <div class="profile-icon" id="profileDateDisplaySavings"></div>
+            </div>
         </header>
 
         <main class="main-content">
             <div class="transactions-header-row">
                 <h2>Savings Entries</h2>
-                </div>
+            </div>
 
             <div class="transactions-list" id="savingsList">
                 <p style="text-align: center; color: var(--text-light); padding: 2rem;">No savings entries found. Add 'gains' with 'What kind?' as 'savings' to your spreadsheet.</p>
@@ -26,7 +31,9 @@
         </main>
     </div>
 
-    <button class="fab-button">+</button>
+    <button class="fab-button" id="addEntryFabSavings">+</button>
+    <button class="fab-button calc-fab-button" id="openCalculatorFabSavings">🧮</button>
+
 
     <script src="script.js"></script>
 </body>
