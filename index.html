@@ -12,32 +12,11 @@
     <div class="container" id="dashboard-page">
         <header class="header">
             <a href="#" class="back-arrow" style="visibility: hidden; opacity: 0;">&larr;</a>
-            <div class="header-left">
-                <button class="menu-button" id="mainFilterButton">&#9776;</button> <h1>Expense Manager</h1>
-            </div>
+            <h1>Expense Manager</h1>
             <div class="profile-icon">P</div>
         </header>
 
         <main class="main-content">
-            <div class="filter-options-container" id="mainFilterOptionsContainer" style="display: none;">
-                <div class="filter-dropdown-group">
-                    <label for="mainCategoryFilterDropdown">Category:</label>
-                    <select id="mainCategoryFilterDropdown">
-                        <option value="">All Categories</option>
-                        </select>
-                </div>
-
-                <div class="filter-date-group">
-                    <label for="mainStartDateInput">Start Date:</label>
-                    <input type="date" id="mainStartDateInput">
-                    <label for="mainEndDateInput">End Date:</label>
-                    <input type="date" id="mainEndDateInput">
-                </div>
-
-                <button class="apply-filters-button" id="mainApplyFiltersButton">Apply Filters</button>
-                <button class="clear-filters-button" id="mainClearFiltersButton">Clear Filters</button>
-            </div>
-
             <section class="card summary-card">
                 <div class="chart-container">
                     <canvas id="expenseChart"></canvas>
@@ -81,16 +60,6 @@
                 <a href="transactions.html" class="arrow-link">&gt;</a>
             </section>
 
-            <section class="card savings-card">
-                <div class="savings-details">
-                    <span class="savings-title">Total Savings</span>
-                    <div class="savings-amount-wrapper">
-                        <span class="savings-amount" id="totalSavingsAmount">₱ 0.00</span>
-                        <button class="toggle-visibility-button" id="toggleSavingsVisibility">&#128065;</button> </div>
-                </div>
-                <a href="savings.html" class="button view-savings-button">View Savings</a>
-            </section>
-
             <section class="card transactions-promo-card">
                 <div class="promo-text">
                     <h2>Transactions on your hands!</h2>
@@ -101,33 +70,7 @@
         </main>
     </div>
 
-    <button class="fab-button calculator-fab" id="calculatorFab">&#x2795;</button> <div class="calculator-modal" id="calculatorModal">
-        <div class="calculator-content">
-            <input type="text" id="calculatorDisplay" class="calculator-display" value="0" readonly>
-            <div class="calculator-buttons">
-                <button class="calc-btn clear" data-action="clear">C</button>
-                <button class="calc-btn backspace" data-action="backspace">&#x232B;</button>
-                <button class="calc-btn operator" data-action="divide">/</button>
-                <button class="calc-btn operator" data-action="multiply">*</button>
-                <button class="calc-btn number">7</button>
-                <button class="calc-btn number">8</button>
-                <button class="calc-btn number">9</button>
-                <button class="calc-btn operator" data-action="subtract">-</button>
-                <button class="calc-btn number">4</button>
-                <button class="calc-btn number">5</button>
-                <button class="calc-btn number">6</button>
-                <button class="calc-btn operator" data-action="add">+</button>
-                <button class="calc-btn number">1</button>
-                <button class="calc-btn number">2</button>
-                <button class="calc-btn number">3</button>
-                <button class="calc-btn equals" data-action="equals">=</button>
-                <button class="calc-btn number zero">0</button>
-                <button class="calc-btn decimal" data-action="decimal">.</button>
-            </div>
-            <button class="close-calculator" id="closeCalculator">&times;</button>
-        </div>
-    </div>
-    <button class="fab-button add-fab">+</button>
+    <button class="fab-button">+</button>
 
     <script src="script.js"></script>
 </body>
