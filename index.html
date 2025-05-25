@@ -11,10 +11,9 @@
 <body class="light-mode">
     <div class="container" id="dashboard-page">
         <header class="header">
-            <a href="#" class="back-arrow" style="visibility: hidden; opacity: 0;">&larr;</a>
-            <h1>Expense Manager</h1>
+            <button class="menu-button" id="mainMenuButton">&#9776;</button> <h1>Expense Manager</h1>
             <div class="header-right-icons">
-                <button class="menu-button" id="mainMenuButton">&#9776;</button> <div class="profile-icon night-mode-toggle" id="nightModeToggle"></div> </div>
+                <div class="profile-icon night-mode-toggle" id="nightModeToggle"></div> </div>
         </header>
 
         <div class="main-menu-sidebar" id="mainMenuSidebar">
@@ -23,9 +22,8 @@
             <ul>
                 <li><a href="index.html">Dashboard</a></li>
                 <li><a href="transactions.html">Transactions</a></li>
-                </ul>
+                <li><a href="savings.html">Savings</a></li> </ul>
         </div>
-
 
         <main class="main-content">
             <section class="card summary-card">
@@ -76,7 +74,7 @@
                     <h2>Track your Savings!</h2>
                     <span class="savings-amount" id="savingsAmount">₱ --.---.--</span>
                     <button class="button mask-button" id="maskSavingsButton">Mask</button>
-                    <a href="#" class="button view-savings-button">View Savings</a>
+                    <a href="savings.html" class="button view-savings-button">View Savings</a>
                 </div>
                 <img src="https://cdn-icons-png.flaticon.com/512/1453/1453653.png" alt="Savings Illustration" class="card-illustration">
             </section>
@@ -101,9 +99,9 @@
                 <input type="text" class="calculator-display" id="calculatorDisplay" value="0" readonly>
                 <div class="calculator-buttons">
                     <button class="calc-btn clear" data-action="clear">C</button>
+                    <button class="calc-btn backspace" data-action="backspace">←</button>
                     <button class="calc-btn operator" data-action="divide">/</button>
                     <button class="calc-btn operator" data-action="multiply">*</button>
-                    <button class="calc-btn backspace" data-action="backspace">←</button>
 
                     <button class="calc-btn digit">7</button>
                     <button class="calc-btn digit">8</button>
