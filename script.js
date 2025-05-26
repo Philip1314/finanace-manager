@@ -408,6 +408,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const csv = await response.text();
             allTransactionsData = parseCSV(csv); // Store raw data globally
 
+
             populateCategoryFilter();
             const today = new Date();
             let initialMonth = today.getMonth() + 1;
@@ -709,7 +710,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 const detailsDiv = document.createElement('div'); detailsDiv.classList.add('transaction-details');
                 const nameSpan = document.createElement('span'); nameSpan.classList.add('transaction-name');
-                nameSpan.textContent = entry.Description || (entry.Type && entry.Type.toLowerCase() === 'gains' ? 'Savings Contribution' : 'Savings Withdrawal'); 
+                // Updated logic for display text based on reversed savings logic
+                nameSpan.textContent = entry.Description || (entry.Type && entry.Type.toLowerCase() === 'gains' ? 'Savings Withdrawal' : 'Savings Contribution'); 
                 detailsDiv.appendChild(nameSpan);
                 const timeSpan = document.createElement('span'); timeSpan.classList.add('transaction-time');
                 timeSpan.textContent = entry.Time || ''; detailsDiv.appendChild(timeSpan);
