@@ -119,7 +119,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             let totalExpensesAmount = 0;
             let totalGainsAmount = 0;
-            let totalSavingsAmount = 0;
+            let totalSavingsAmount = 0; // This will now represent net savings
             const expenseCategoriesForChart = { Food: 0, Medicines: 0, Shopping: 0, Misc: 0, Transportation: 0, 'Utility Bills': 0 }; // Added more categories
 
             data.forEach(entry => {
@@ -134,6 +134,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 if (entryType === 'expenses') {
                     totalExpensesAmount += amount;
+                    totalSavingsAmount -= amount; // Deduct from savings
                     if (entryWhatKind === 'food' || entryWhatKind === 'groceries') expenseCategoriesForChart.Food += amount;
                     else if (entryWhatKind === 'medicines') expenseCategoriesForChart.Medicines += amount;
                     else if (entryWhatKind === 'online shopping') expenseCategoriesForChart.Shopping += amount;
@@ -142,7 +143,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     else expenseCategoriesForChart.Misc += amount;
                 } else if (entryType === 'gains') {
                     totalGainsAmount += amount;
-                    if (entryWhatKind === 'savings contribution') totalSavingsAmount += amount;
+                    totalSavingsAmount += amount; // Add to savings
                 }
             });
 
@@ -316,7 +317,7 @@ document.addEventListener('DOMContentLoaded', () => {
             let initialMonth = today.getMonth() + 1;
 
             // Set initial active month button
-            const monthButtons = document.querySelectorAll('.month-button');
+            const monthButtons = document.querySelectorAll('.months-nav .month-button');
             monthButtons.forEach(button => {
                 button.classList.remove('active');
                 if (parseInt(button.dataset.month) === initialMonth) {
@@ -338,7 +339,7 @@ document.addEventListener('DOMContentLoaded', () => {
         categoryFilterDropdown.innerHTML = '<option value="">All Categories</option>';
         const uniqueCategories = new Set();
         allTransactionsData.forEach(entry => {
-            if (entry['What kind?']) uniqueCategories.add(entry['What kind?'].trim());
+            if (entry['What kind?']) uniqueCategories.add(entry['What kind'].trim());
             if (entry.Type) uniqueCategories.add(entry.Type.trim()); // Add "Gains" and "Expenses" as main types
         });
 
@@ -375,8 +376,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 return false;
             }
 
-            const entryDate = new Date(entry.Date); // Use entry.Date directly
-            entryDate.setHours(0, 0, 0, 0);
+            const entryDate = new Date(entry.Date); entryDate.setHours(0, 0, 0, 0);
 
             if (selectedMonth && !startDate && !endDate && entryDate.getMonth() + 1 !== selectedMonth) return false;
 
@@ -498,14 +498,30 @@ document.addEventListener('DOMContentLoaded', () => {
             const allData = parseCSV(csv);
 
             let overallTotalSavings = 0;
-            allSavingsDataGlobal = allData.filter(entry => { // Store filtered data globally for pagination
+            // Filter and calculate savings based on all transactions (gains add, expenses deduct)
+            allSavingsDataGlobal = allData.filter(entry => {
                 const amount = parseFloat(entry.Amount);
-                const isSavings = entry.Type && entry.Type.toLowerCase() === 'gains' &&
-                                  entry['What kind?'] && entry['What kind?'].toLowerCase() === 'savings contribution' &&
-                                  !isNaN(amount);
-                if (isSavings) overallTotalSavings += amount;
-                return isSavings;
+                const entryType = entry.Type ? entry.Type.toLowerCase() : '';
+                if (isNaN(amount)) return false;
+
+                if (entryType === 'gains') {
+                    overallTotalSavings += amount;
+                    // Only include actual savings contributions in the list if you want to differentiate
+                    // Otherwise, include all transactions for a running balance in the list
+                    return entry['What kind?'] && entry['What kind?'].toLowerCase() === 'savings contribution';
+                } else if (entryType === 'expenses') {
+                    overallTotalSavings -= amount;
+                    // Include all expenses in the list for a running balance
+                    return true;
+                }
+                return false;
             });
+            
+            // To display all transactions on the savings page (including expenses and gains),
+            // you'd need to re-think how allSavingsDataGlobal is populated.
+            // For now, it's filtered for 'savings contribution' in gains, and ALL expenses.
+            // If you want *all* transactions to be listed here, you'd simply assign allData to allSavingsDataGlobal
+            // and adjust the item rendering to show appropriate colors/icons for expenses too.
 
             if (totalSavingsAmountSpan) totalSavingsAmountSpan.textContent = formatCurrency(overallTotalSavings);
             
@@ -572,16 +588,35 @@ document.addEventListener('DOMContentLoaded', () => {
                 return timeA[2] - timeB[2];
             }).forEach(entry => {
                 const itemDiv = document.createElement('div'); itemDiv.classList.add('transaction-item');
-                const categoryIconDiv = document.createElement('div'); categoryIconDiv.classList.add('transaction-category-icon', 'category-gain');
-                categoryIconDiv.textContent = '💰'; itemDiv.appendChild(categoryIconDiv);
+                const categoryIconDiv = document.createElement('div'); categoryIconDiv.classList.add('transaction-category-icon');
+                const { category: mappedCategory, icon: categoryIcon } = mapCategoryAndIcon(entry.Type, entry['What kind?']);
+
+                // Determine icon and class based on type and category
+                if (entry.Type.toLowerCase() === 'gains') {
+                    categoryIconDiv.classList.add('category-gain');
+                    categoryIconDiv.textContent = categoryIcon;
+                } else if (entry.Type.toLowerCase() === 'expenses') {
+                    switch (mappedCategory.toLowerCase()) {
+                        case 'food': categoryIconDiv.classList.add('category-food'); break;
+                        case 'medicines': categoryIconDiv.classList.add('category-medicines'); break;
+                        case 'shopping': categoryIconDiv.classList.add('category-shopping'); break;
+                        default: categoryIconDiv.classList.add('category-misc'); break;
+                    }
+                    categoryIconDiv.textContent = categoryIcon; // Use the expense icon
+                }
+                itemDiv.appendChild(categoryIconDiv);
+
                 const detailsDiv = document.createElement('div'); detailsDiv.classList.add('transaction-details');
                 const nameSpan = document.createElement('span'); nameSpan.classList.add('transaction-name');
-                nameSpan.textContent = entry.Description || 'Savings Contribution'; detailsDiv.appendChild(nameSpan);
+                nameSpan.textContent = entry.Description || entry['What kind?'] || 'N/A'; detailsDiv.appendChild(nameSpan);
                 const timeSpan = document.createElement('span'); timeSpan.classList.add('transaction-time');
                 timeSpan.textContent = entry.Time || ''; detailsDiv.appendChild(timeSpan);
                 itemDiv.appendChild(detailsDiv);
-                const amountSpan = document.createElement('span'); amountSpan.classList.add('transaction-amount', 'gain');
-                amountSpan.textContent = formatCurrency(entry.Amount); itemDiv.appendChild(amountSpan);
+                const amountSpan = document.createElement('span'); amountSpan.classList.add('transaction-amount');
+                amountSpan.textContent = formatCurrency(entry.Amount);
+                if (entry.Type.toLowerCase() === 'expenses') amountSpan.classList.add('expense');
+                else if (entry.Type.toLowerCase() === 'gains') amountSpan.classList.add('gain');
+                itemDiv.appendChild(amountSpan);
                 groupDiv.appendChild(itemDiv);
             });
             savingsListDiv.appendChild(groupDiv);
@@ -802,7 +837,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const currentMonthBtn = document.querySelector(`.months-nav .month-button[data-month="${currentMonth}"]`);
                 if (currentMonthBtn) currentMonthBtn.classList.add('active');
                 renderTransactions(currentMonth);
-                filterOptionsContainer.style.display = 'none';
+                if(filterOptionsContainer) filterOptionsContainer.style.display = 'none';
             });
         }
         monthButtons.forEach(button => {
