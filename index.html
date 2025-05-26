@@ -1,135 +1,213 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Expense Manager</title>
-    <link rel="stylesheet" href="style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Expense Manager</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body class="light-mode">
-    <div class="container" id="dashboard-page">
-        <header class="header">
-            <button class="menu-button" id="mainMenuButton">&#9776;</button> <h1>Expense Manager</h1>
-            <div class="header-right-icons">
-                <div class="profile-icon night-mode-toggle" id="nightModeToggle"></div>
-            </div>
-        </header>
+    <div class="container" id="dashboard-page">
+        <header class="header">
+            <button class="menu-button" id="mainMenuButton">&#9776;</button> <h1>Expense Manager</h1>
+            <div class="header-right-icons">
+                <div class="profile-icon night-mode-toggle" id="nightModeToggle"></div>
+            </div>
+        </header>
 
-        <div class="main-menu-sidebar" id="mainMenuSidebar">
-            <button class="close-sidebar-button" id="closeSidebarButton">&times;</button>
-            <h2>Menu</h2>
-            <ul>
-                <li><a href="index.html">Dashboard</a></li>
-                <li><a href="transactions.html">Transactions</a></li>
-                <li><a href="savings.html">Savings</a></li>
-            </ul>
-        </div>
+        <div class="main-menu-sidebar" id="mainMenuSidebar">
+            <button class="close-sidebar-button" id="closeSidebarButton">&times;</button>
+            <h2>Menu</h2>
+            <ul>
+                <li><a href="index.html">Dashboard</a></li>
+                <li><a href="transactions.html">Transactions</a></li>
+                <li><a href="savings.html">Savings</a></li>
+            </ul>
+        </div>
 
-        <main class="main-content">
-            <section class="card summary-card">
-                <div class="chart-container">
-                    <canvas id="expenseChart"></canvas>
-                    <div class="net-expense-overlay">
-                        <span class="label">Net Expense</span>
-                        <span class="amount" id="netExpenseValue">₱ 0.00</span>
-                    </div>
-                </div>
-                <div class="legend">
-                    <div class="legend-item">
-                        <span class="dot food"></span>
-                        Food<span id="foodPct">0%</span>
-                    </div>
-                    <div class="legend-item">
-                        <span class="dot medicines"></span>
-                        Medicines<span id="medicinesPct">0%</span>
-                    </div>
-                    <div class="legend-item">
-                        <span class="dot shopping"></span>
-                        Shopping<span id="shoppingPct">0%</span>
-                    </div>
-                    <div class="legend-item">
-                        <span class="dot misc"></span>
-                        Misc<span id="miscPct">0%</span>
-                    </div>
-                </div>
-            </section>
+        <main class="main-content">
+            <section class="card summary-card">
+                <div class="chart-container">
+                    <canvas id="expenseChart"></canvas>
+                    <div class="net-expense-overlay">
+                        <span class="label">Net Expense</span>
+                        <span class="amount" id="netExpenseValue">₱ 0.00</span>
+                    </div>
+                </div>
+                <div class="legend">
+                    <div class="legend-item">
+                        <span class="dot food"></span>
+                        Food<span id="foodPct">0%</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="dot medicines"></span>
+                        Medicines<span id="medicinesPct">0%</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="dot shopping"></span>
+                        Shopping<span id="shoppingPct">0%</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="dot misc"></span>
+                        Misc<span id="miscPct">0%</span>
+                    </div>
+                </div>
+            </section>
 
-            <section class="card limit-card">
-                <div class="limit-progress-wrapper">
-                    <svg class="progress-circle" viewBox="0 0 80 80">
-                        <circle class="progress-ring-track" r="34" cx="40" cy="40"></circle>
-                        <circle class="progress-ring-progress" r="34" cx="40" cy="40"></circle>
-                    </svg>
-                    <span class="progress-text" id="remainingBalancePct">0%</span>
-                </div>
-                <div class="limit-details">
-                    <span class="limit-title">Remaining Balance</span>
-                    <span class="limit-amount" id="remainingBalanceAmount">₱ 0.00 of ₱ 0.00</span>
-                </div>
-                <a href="transactions.html" class="arrow-link">&gt;</a>
-            </section>
+            <section class="card limit-card">
+                <div class="limit-progress-wrapper">
+                    <svg class="progress-circle" viewBox="0 0 80 80">
+                        <circle class="progress-ring-track" r="34" cx="40" cy="40"></circle>
+                        <circle class="progress-ring-progress" r="34" cx="40" cy="40"></circle>
+                    </svg>
+                    <span class="progress-text" id="remainingBalancePct">0%</span>
+                </div>
+                <div class="limit-details">
+                    <span class="limit-title">Remaining Balance</span>
+                    <span class="limit-amount" id="remainingBalanceAmount">₱ 0.00 of ₱ 0.00</span>
+                </div>
+                <a href="transactions.html" class="arrow-link">&gt;</a>
+            </section>
 
-            <section class="card savings-card">
-                <div class="promo-text">
-                    <h2>Current Savings!</h2>
-                    <span class="savings-amount" id="savingsAmount">₱ 0.00</span>
-                    <button class="mask-button" id="maskSavingsButton">Mask</button>
-                    <a href="savings.html" class="view-savings-button">View Savings</a>
-                </div>
-                <img src="https://cdn-icons-png.flaticon.com/512/1453/1453653.png" alt="Savings Illustration" class="card-illustration">
-            </section>
+            <section class="card savings-card">
+                <div class="promo-text">
+                    <h2>Current Savings!</h2>
+                    <span class="savings-amount" id="savingsAmount">₱ 0.00</span>
+                    <button class="mask-button" id="maskSavingsButton">Mask</button>
+                    <a href="savings.html" class="view-savings-button">View Savings</a>
+                </div>
+                <img src="https://cdn-icons-png.flaticon.com/512/1453/1453653.png" alt="Savings Illustration" class="card-illustration">
+            </section>
 
-            <section class="card transactions-promo-card">
-                <div class="promo-text">
-                    <h2>Transactions on your hands!</h2>
-                    <a href="transactions.html" class="button">View All</a>
-                </div>
-                <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQpj4q0I_0ueCPz6ofi7pE8JMqId_ZJr1bFP4aGIm0nRpDCVV-Sx52Z-pjW&s=10" alt="Card Illustration" class="card-illustration">
-            </section>
-        </main>
-    </div>
+            <section class="card transactions-promo-card">
+                <div class="promo-text">
+                    <h2>Transactions on your hands!</h2>
+                    <a href="transactions.html" class="button">View All</a>
+                </div>
+                <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQpj4q0I_0ueCPz6ofi7pE8JMqId_ZJr1bFP4aGIm0nRpDCVV-Sx52Z-pjW&s=10" alt="Card Illustration" class="card-illustration">
+            </section>
+        </main>
+    </div>
 
-    <button class="fab-button" id="addTransactionFab">+</button>
-    <button class="fab-button fab-calculator" id="openCalculatorFab">CALC</button>
+    <button class="fab-button" id="addTransactionFab">+</button>
+    <button class="fab-button fab-calculator" id="openCalculatorFab">CALC</button>
 
-    <div class="calculator-overlay" id="calculatorOverlay">
-        <div class="calculator-card" id="calculatorCard">
-            <div class="calculator-header">
-                <h3>Calculator</h3>
-                <button class="close-calculator-button" id="closeCalculatorButton">&times;</button>
-            </div>
-            <div class="calculator-body">
-                <input type="text" class="calculator-display" id="calculatorDisplay" value="0" readonly>
-                <div class="calculator-buttons">
-                    <button class="calc-btn clear" data-action="clear">C</button>
-                    <button class="calc-btn backspace" data-action="backspace">←</button>
-                    <button class="calc-btn operator" data-action="divide">/</button>
-                    <button class="calc-btn operator" data-action="multiply">*</button>
+    <div class="calculator-overlay" id="calculatorOverlay">
+        <div class="calculator-card" id="calculatorCard">
+            <div class="calculator-header">
+                <h3>Calculator</h3>
+                <button class="close-calculator-button" id="closeCalculatorButton">&times;</button>
+            </div>
+            <div class="calculator-body">
+                <input type="text" class="calculator-display" id="calculatorDisplay" value="0" readonly>
+                <div class="calculator-buttons">
+                    <button class="calc-btn clear" data-action="clear">C</button>
+                    <button class="calc-btn backspace" data-action="backspace">←</button>
+                    <button class="calc-btn operator" data-action="divide">/</button>
+                    <button class="calc-btn operator" data-action="multiply">*</button>
 
-                    <button class="calc-btn digit">7</button>
-                    <button class="calc-btn digit">8</button>
-                    <button class="calc-btn digit">9</button>
-                    <button class="calc-btn operator" data-action="subtract">-</button>
+                    <button class="calc-btn digit">7</button>
+                    <button class="calc-btn digit">8</button>
+                    <button class="calc-btn digit">9</button>
+                    <button class="calc-btn operator" data-action="subtract">-</button>
 
-                    <button class="calc-btn digit">4</button>
-                    <button class="calc-btn digit">5</button>
-                    <button class="calc-btn digit">6</button>
-                    <button class="calc-btn operator" data-action="add">+</button>
+                    <button class="calc-btn digit">4</button>
+                    <button class="calc-btn digit">5</button>
+                    <button class="calc-btn digit">6</button>
+                    <button class="calc-btn operator" data-action="add">+</button>
 
-                    <button class="calc-btn digit">1</button>
-                    <button class="calc-btn digit">2</button>
-                    <button class="calc-btn digit">3</button>
-                    <button class="calc-btn equals" data-action="calculate">=</button>
+                    <button class="calc-btn digit">1</button>
+                    <button class="calc-btn digit">2</button>
+                    <button class="calc-btn digit">3</button>
+                    <button class="calc-btn equals" data-action="calculate">=</button>
 
-                    <button class="calc-btn digit zero">0</button>
-                    <button class="calc-btn decimal" data-action="decimal">.</button>
-                </div>
-            </div>
-        </div>
-    </div>
+                    <button class="calc-btn digit zero">0</button>
+                    <button class="calc-btn decimal" data-action="decimal">.</button>
+                </div>
+            </div>
+        </div>
+    </div>
 
-    <script src="script.js"></script>
+    <button class="fab-button" id="addTransactionFab">+</button>
+    <button class="fab-button fab-calculator" id="openCalculatorFab">CALC</button>
+
+    <div class="calculator-overlay" id="calculatorOverlay">
+        <div class="calculator-card" id="calculatorCard">
+            <div class="calculator-header">
+                <h3>Calculator</h3>
+                <button class="close-calculator-button" id="closeCalculatorButton">&times;</button>
+            </div>
+            <div class="calculator-body">
+                <input type="text" class="calculator-display" id="calculatorDisplay" value="0" readonly>
+                <div class="calculator-buttons">
+                    <button class="calc-btn clear" data-action="clear">C</button>
+                    <button class="calc-btn backspace" data-action="backspace">←</button>
+                    <button class="calc-btn operator" data-action="divide">/</button>
+                    <button class="calc-btn operator" data-action="multiply">*</button>
+
+                    <button class="calc-btn digit">7</button>
+                    <button class="calc-btn digit">8</button>
+                    <button class="calc-btn digit">9</button>
+                    <button class="calc-btn operator" data-action="subtract">-</button>
+
+                    <button class="calc-btn digit">4</button>
+                    <button class="calc-btn digit">5</button>
+                    <button class="calc-btn digit">6</button>
+                    <button class="calc-btn operator" data-action="add">+</button>
+
+                    <button class="calc-btn digit">1</button>
+                    <button class="calc-btn digit">2</button>
+                    <button class="calc-btn digit">3</button>
+                    <button class="calc-btn equals" data-action="calculate">=</button>
+
+                    <button class="calc-btn digit zero">0</button>
+                    <button class="calc-btn decimal" data-action="decimal">.</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <button class="fab-button" id="addTransactionFab">+</button>
+    <button class="fab-button fab-calculator" id="openCalculatorFab">CALC</button>
+
+    <div class="calculator-overlay" id="calculatorOverlay">
+        <div class="calculator-card" id="calculatorCard">
+            <div class="calculator-header">
+                <h3>Calculator</h3>
+                <button class="close-calculator-button" id="closeCalculatorButton">&times;</button>
+            </div>
+            <div class="calculator-body">
+                <input type="text" class="calculator-display" id="calculatorDisplay" value="0" readonly>
+                <div class="calculator-buttons">
+                    <button class="calc-btn clear" data-action="clear">C</button>
+                    <button class="calc-btn backspace" data-action="backspace">←</button>
+                    <button class="calc-btn operator" data-action="divide">/</button>
+                    <button class="calc-btn operator" data-action="multiply">*</button>
+
+                    <button class="calc-btn digit">7</button>
+                    <button class="calc-btn digit">8</button>
+                    <button class="calc-btn digit">9</button>
+                    <button class="calc-btn operator" data-action="subtract">-</button>
+
+                    <button class="calc-btn digit">4</button>
+                    <button class="calc-btn digit">5</button>
+                    <button class="calc-btn digit">6</button>
+                    <button class="calc-btn operator" data-action="add">+</button>
+
+                    <button class="calc-btn digit">1</button>
+                    <button class="calc-btn digit">2</button>
+                    <button class="calc-btn digit">3</button>
+                    <button class="calc-btn equals" data-action="calculate">=</button>
+
+                    <button class="calc-btn digit zero">0</button>
+                    <button class="calc-btn decimal" data-action="decimal">.</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
 </body>
 </html>
