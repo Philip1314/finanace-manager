@@ -1,6 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
-    const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQgMFbI8pivLbRpc2nL2Gyoxw47PmXEVxvUDrjr-t86gj4-J3QM8uV7m8iJN9wxlYo3IY5FQqqUICei/pub?output=csv';
-    const GOOGLE_FORM_URL = 'https://docs.google.com/forms/d/e/1FAIpQLSdrDJoOeo264aOn4g2UEe-K-FHpbssBAVmEtOWoW46Q1cwjgg/viewform?usp=header';
+    const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQgMFbI8pivLbRpc2nL2Gyoxw47PmXEVxvUDJjr-t86gj4-J3QM8uV7m8iJN9wxlYo3IY5FQqqUICei/pub?output=csv';
+    const GOOGLE_FORM_URL = 'https://docs.google.com/forms/d/e/1FAIpQLSdrDJoOeo264aOn4g2UE-K-FHpbssBAVmEtOWoW46Q1cwjgg/viewform?usp=header';
 
     // --- Pagination Globals ---
     const ITEMS_PER_PAGE = 15;
@@ -45,7 +45,7 @@ document.addEventListener('DOMContentLoaded', () => {
         let icon = '✨';
 
         const lowerCaseWhatKind = whatKind ? whatKind.toLowerCase() : '';
-        const lowerCaseType = type ? type.Type.toLowerCase() : '';
+        const lowerCaseType = type ? type.toLowerCase() : '';
 
         if (lowerCaseType === 'gains') {
             category = 'Gain';
@@ -93,10 +93,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 body.classList.add('light-mode');
                 localStorage.setItem('theme', 'light-mode');
             }
-            // Re-render chart to apply new colors based on current filters
-            const currentMonth = document.getElementById('filterMonth').value;
-            const currentYear = document.getElementById('filterYear').value;
-            updateDashboard(currentMonth, currentYear);
         });
     }
 
@@ -117,87 +113,48 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- Dashboard Specific Logic (index.html) ---
-    async function updateDashboard(filterMonth = 'All', filterYear = 'All') {
+    async function updateDashboard() {
         if (!document.getElementById('dashboard-page')) return;
         try {
             const response = await fetch(CSV_URL);
             const csv = await response.text();
-            allTransactionsData = parseCSV(csv); // Store all data for filtering
-
-            // Populate year filter dropdown
-            const years = new Set();
-            allTransactionsData.forEach(entry => {
-                const entryDate = new Date(entry.Date);
-                if (!isNaN(entryDate.getFullYear())) {
-                    years.add(entryDate.getFullYear());
-                }
-            });
-            const sortedYears = Array.from(years).sort((a, b) => b - a); // Descending order
-            const filterYearSelect = document.getElementById('filterYear');
-            if (filterYearSelect) {
-                filterYearSelect.innerHTML = '<option value="All">All Years</option>';
-                sortedYears.forEach(year => {
-                    const option = document.createElement('option');
-                    option.value = year;
-                    option.textContent = year;
-                    filterYearSelect.appendChild(option);
-                });
-                // Set the selected year if it was previously filtered
-                if (filterYear !== 'All') {
-                    filterYearSelect.value = filterYear;
-                }
-            }
-            // Set the selected month if it was previously filtered
-            const filterMonthSelect = document.getElementById('filterMonth');
-            if (filterMonthSelect && filterMonth !== 'All') {
-                filterMonthSelect.value = filterMonth;
-            }
-
+            const data = parseCSV(csv);
 
             let totalExpensesAmount = 0;
             let totalGainsAmount = 0;
-            let totalSavingsAmount = 0;
-            const expenseCategoriesForChart = { Food: 0, Medicines: 0, Shopping: 0, Misc: 0 };
+            let totalSavingsAmount = 0; // This will now track net savings from 'savings' entries
+            // Removed 'Transportation' as a distinct category for the chart
+            const expenseCategoriesForChart = { Food: 0, Medicines: 0, Shopping: 0, Misc: 0, 'Utility Bills': 0 };
 
-            allTransactionsData.forEach(entry => {
+            data.forEach(entry => {
                 const amount = parseFloat(entry.Amount);
                 const entryType = entry.Type ? entry.Type.toLowerCase() : '';
                 const entryWhatKind = entry['What kind?'] ? entry['What kind?'].toLowerCase() : '';
 
-                const entryDate = new Date(entry.Date);
-                if (isNaN(amount) || !entryType || isNaN(entryDate)) {
+                if (isNaN(amount) || !entryType) {
                     console.warn('Dashboard - Skipping malformed entry:', entry);
                     return;
                 }
 
-                const entryMonth = entryDate.getMonth() + 1; // 1-indexed month
-                const entryYear = entryDate.getFullYear();
-
-                const matchesMonth = (filterMonth === 'All' || entryMonth === parseInt(filterMonth));
-                const matchesYear = (filterYear === 'All' || entryYear === parseInt(filterYear));
-
-                if (!matchesMonth || !matchesYear) {
-                    return; // Skip if it doesn't match the selected filters
-                }
-
                 if (entryType === 'expenses') {
                     totalExpensesAmount += amount;
-                    // Accumulate for categories based on 'What kind?'
                     if (entryWhatKind === 'food' || entryWhatKind === 'groceries') expenseCategoriesForChart.Food += amount;
                     else if (entryWhatKind === 'medicines') expenseCategoriesForChart.Medicines += amount;
                     else if (entryWhatKind === 'online shopping') expenseCategoriesForChart.Shopping += amount;
-                    else expenseCategoriesForChart.Misc += amount; // All other expenses go to Misc
+                    // Transportation now falls under 'Misc'
+                    else if (entryWhatKind === 'utility bills') expenseCategoriesForChart['Utility Bills'] += amount;
+                    else expenseCategoriesForChart.Misc += amount; // This is the fallback for categories not explicitly handled, now includes transportation
 
-                    // Deduct from savings if it's an expense marked as 'savings'
+                    // Add to savings if it's an expense marked as 'savings'
                     if (entryWhatKind === 'savings') {
-                        totalSavingsAmount -= amount;
+                        totalSavingsAmount += amount;
                     }
 
                 } else if (entryType === 'gains') {
                     totalGainsAmount += amount;
-                    // Add to totalSavingsAmount if it's a 'savings' or 'savings contribution' gain
+                    // Deduct from totalSavingsAmount if it's a 'savings' or 'savings contribution' gain
                     if (entryWhatKind === 'savings contribution' || entryWhatKind === 'savings') {
-                        totalSavingsAmount += amount;
+                        totalSavingsAmount -= amount;
                     }
                 }
             });
@@ -231,36 +188,32 @@ document.addEventListener('DOMContentLoaded', () => {
                 progressCircle.style.stroke = progressColor;
             }
 
-            // Filter out categories with 0 amounts for chart and legend display
+            // Filter category names based on the updated expenseCategoriesForChart
             const categoryNames = Object.keys(expenseCategoriesForChart).filter(cat => expenseCategoriesForChart[cat] > 0);
             const categoryAmounts = categoryNames.map(cat => expenseCategoriesForChart[cat]);
             const totalCategoryExpenseForChart = categoryAmounts.reduce((sum, amount) => sum + amount, 0);
 
-            // Dynamically update legend percentages based on *filtered* total
+            // Dynamically update legend percentages
             document.getElementById('foodPct').textContent = `${totalCategoryExpenseForChart > 0 ? Math.round((expenseCategoriesForChart.Food / totalCategoryExpenseForChart) * 100) : 0}%`;
             document.getElementById('medicinesPct').textContent = `${totalCategoryExpenseForChart > 0 ? Math.round((expenseCategoriesForChart.Medicines / totalCategoryExpenseForChart) * 100) : 0}%`;
             document.getElementById('shoppingPct').textContent = `${totalCategoryExpenseForChart > 0 ? Math.round((expenseCategoriesForChart.Shopping / totalCategoryExpenseForChart) * 100) : 0}%`;
             document.getElementById('miscPct').textContent = `${totalCategoryExpenseForChart > 0 ? Math.round((expenseCategoriesForChart.Misc / totalCategoryExpenseForChart) * 100) : 0}%`;
-            // Ensure Utility Bills is also updated if it was a category in the original code
-            // (It was removed from chart categories in the previous update, but keeping this for robustness if it was intended)
-            // If Utility Bills is truly not a separate category for the chart, remove this line and its corresponding legend item in HTML.
-            // For now, based on the original HTML, it's not a separate legend item, so this line might be redundant if the chart only shows 4 categories.
-            // If you want Utility Bills to be a separate slice, you'd need to add it to expenseCategoriesForChart and the legend.
-            // Since the request was to *revert* other changes, I'll assume the original 4 categories (Food, Meds, Shopping, Misc) for the chart.
 
 
             const ctx = document.getElementById('expenseChart');
             if (ctx) {
                 if (window.expenseChartInstance) window.expenseChartInstance.destroy();
 
+                // Explicit color mapping based on category for Chart.js - 'Transportation' removed from here
                 const categoryColorMap = {
                     'Food': getComputedStyle(document.documentElement).getPropertyValue('--accent-green').trim(),
                     'Medicines': getComputedStyle(document.documentElement).getPropertyValue('--accent-red').trim(),
                     'Shopping': getComputedStyle(document.documentElement).getPropertyValue('--accent-orange').trim(),
                     'Misc': getComputedStyle(document.documentElement).getPropertyValue('--accent-blue').trim(),
+                    'Utility Bills': '#FFEB3B', // A distinct yellow for Utility Bills
                 };
 
-                const chartBackgroundColors = categoryNames.map(cat => categoryColorMap[cat] || 'gray');
+                const chartBackgroundColors = categoryNames.map(cat => categoryColorMap[cat] || 'gray'); // Default to gray if category not mapped
 
                 window.expenseChartInstance = new Chart(ctx.getContext('2d'), {
                     type: 'doughnut',
@@ -268,7 +221,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         labels: categoryNames,
                         datasets: [{
                             data: categoryAmounts,
-                            backgroundColor: chartBackgroundColors,
+                            backgroundColor: chartBackgroundColors, // Use the mapped colors
                             borderColor: 'var(--card-bg)',
                             borderWidth: 4,
                         }]
@@ -305,39 +258,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
-
-    // --- Filter Modal Pop-up Logic ---
-    const filterChartButton = document.getElementById('filterChartButton');
-    const filterModalOverlay = document.getElementById('filterModalOverlay');
-    const closeFilterModalButton = document.getElementById('closeFilterModalButton');
-    const filterMonthSelect = document.getElementById('filterMonth');
-    const filterYearSelect = document.getElementById('filterYear');
-    const applyChartFilterButton = document.getElementById('applyChartFilter');
-
-    if (filterChartButton && filterModalOverlay && closeFilterModalButton && filterMonthSelect && filterYearSelect && applyChartFilterButton) {
-        filterChartButton.addEventListener('click', () => {
-            filterModalOverlay.classList.add('active');
-        });
-
-        closeFilterModalButton.addEventListener('click', () => {
-            filterModalOverlay.classList.remove('active');
-        });
-
-        // Close modal if clicked outside
-        filterModalOverlay.addEventListener('click', (event) => {
-            if (event.target === filterModalOverlay) {
-                filterModalOverlay.classList.remove('active');
-            }
-        });
-
-        applyChartFilterButton.addEventListener('click', () => {
-            const selectedMonth = filterMonthSelect.value;
-            const selectedYear = filterYearSelect.value;
-            updateDashboard(selectedMonth, selectedYear); // Re-render dashboard with filters
-            filterModalOverlay.classList.remove('active'); // Close modal
-        });
-    }
-
 
     // --- Generic Pagination Setup ---
     function setupPaginationControls(containerElement, totalPages, currentPage, onPageChangeCallback) {
@@ -382,15 +302,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 endPage = Math.min(totalPages -1, maxPagesToShow -1); // Show 1, 2, 3, ..., last
             }
             if (currentPage >= totalPages - 2) {
-                startPage = Math.max(2, totalPages - (maxPagesToShow - 2) ); // Show 1, ..., last-2, last-...
+                startPage = Math.max(2, totalPages - (maxPagesToShow - 2) ); // Show 1, ..., last-2, last-1, last
             }
+
 
             for (let i = startPage; i <= endPage; i++) {
                 containerElement.appendChild(createButton(i, i, false, i === currentPage));
             }
 
             if (currentPage < totalPages - 2) {
-                containerElement.appendChild(createButton('...', 0, false, false, true)); // Ellipsis
+                 containerElement.appendChild(createButton('...', 0, false, false, true)); // Ellipsis
             }
             containerElement.appendChild(createButton(totalPages, totalPages, false, totalPages === currentPage)); // Last page
         }
@@ -402,7 +323,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Transactions Page Specific Logic (transactions.html) ---
     async function fetchAndProcessTransactions() {
-        if (!document.getElementById('transactions-page')) return;
         try {
             const response = await fetch(CSV_URL);
             const csv = await response.text();
@@ -472,7 +392,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const amount = parseFloat(entry.Amount);
             const date = new Date(entry.Date); // CSV Date
             const entryType = entry.Type ? entry.Type.toLowerCase() : '';
-            const entryWhatKind = entry['What kind?'] ? entry['What kind?'].toLowerCase() : '';
+            const entryWhatKind = entry['What kind?'] ? entry['What kind?'].toLowerCase() : ''; // Get 'What kind?' for filtering
 
             if (isNaN(amount) || isNaN(date.getTime()) || !entryType) { // Check date validity
                 console.warn('Skipping malformed entry:', entry);
@@ -549,7 +469,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }).forEach(entry => {
                 const itemDiv = document.createElement('div'); itemDiv.classList.add('transaction-item');
                 const categoryIconDiv = document.createElement('div'); categoryIconDiv.classList.add('transaction-category-icon');
-                const { category: mappedCategory, icon: categoryIcon } = mapCategoryAndIcon(entry, entry['What kind?']);
+                const { category: mappedCategory, icon: categoryIcon } = mapCategoryAndIcon(entry.Type, entry['What kind?']);
                 if (entry.Type.toLowerCase() === 'gains') categoryIconDiv.classList.add('category-gain');
                 else {
                     switch (mappedCategory.toLowerCase()) {
@@ -596,7 +516,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // --- Savings Page Specific Logic (savings.html) ---
+    // --- Savings Page Logic (savings.html) ---
     async function updateSavingsPage() {
         if (!document.getElementById('savings-page')) return;
         const totalSavingsAmountSpan = document.getElementById('totalSavingsAmount');
@@ -617,9 +537,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 if (isSavingsEntry) {
                     if (entryType === 'gains') {
-                        overallTotalSavings += amount;
+                        overallTotalSavings -= amount; // CHANGE: Deduct for gains 'savings'
                     } else if (entryType === 'expenses') {
-                        overallTotalSavings -= amount;
+                        overallTotalSavings += amount; // CHANGE: Add for expenses 'savings'
                     }
                 }
                 return isSavingsEntry; // Only keep these entries for display
@@ -887,7 +807,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Initialize page-specific functions
     if (document.getElementById('dashboard-page')) {
-        updateDashboard(); // Initial call to load data and render chart
+        updateDashboard();
     } else if (document.getElementById('transactions-page')) {
         const filterButton = document.getElementById('filterButton');
         const filterOptionsContainer = document.getElementById('filterOptionsContainer');
