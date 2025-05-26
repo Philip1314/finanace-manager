@@ -147,14 +147,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
                     // Add to savings if it's an expense marked as 'savings'
                     if (entryWhatKind === 'savings') {
-                        totalSavingsAmount += amount;
+                        totalSavingsAmount += amount; // CHANGE: Add for expenses 'savings'
                     }
 
                 } else if (entryType === 'gains') {
                     totalGainsAmount += amount;
                     // Deduct from totalSavingsAmount if it's a 'savings' or 'savings contribution' gain
                     if (entryWhatKind === 'savings contribution' || entryWhatKind === 'savings') {
-                        totalSavingsAmount -= amount;
+                        totalSavingsAmount -= amount; // CHANGE: Deduct for gains 'savings'
                     }
                 }
             });
