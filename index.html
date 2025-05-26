@@ -29,23 +29,22 @@
 
         <main class="main-content">
             <section class="card summary-card">
-                <div class="chart-filters">
-                    <select id="monthFilter">
-                        <option value="">All Months</option>
-                        <option value="0">January</option>
-                        <option value="1">February</option>
-                        <option value="2">March</option>
-                        <option value="3">April</option>
-                        <option value="4">May</option>
-                        <option value="5">June</option>
-                        <option value="6">July</option>
-                        <option value="7">August</option>
-                        <option value="8">September</option>
-                        <option value="9">October</option>
-                        <option value="10">November</option>
-                        <option value="11">December</option>
-                    </select>
-                    <select id="yearFilter"></select>
+                <div class="chart-header">
+                    <h2>Expense Breakdown</h2>
+                    <button id="filterChartButton" class="filter-button">Filter <span class="arrow-down"></span></button>
+                </div>
+                <div id="filterOptionsContainer" class="filter-options-container">
+                    <div class="filter-group">
+                        <label for="chartCategoryFilter">Category:</label>
+                        <select id="chartCategoryFilter">
+                            <option value="All">All Categories</option>
+                            <option value="Food">Food</option>
+                            <option value="Medicines">Medicines</option>
+                            <option value="Shopping">Shopping</option>
+                            <option value="Misc">Misc</option>
+                            <option value="Utility Bills">Utility Bills</option>
+                        </select>
+                    </div>
                 </div>
                 <div class="chart-container">
                     <canvas id="expenseChart"></canvas>
@@ -57,19 +56,23 @@
                 <div class="legend">
                     <div class="legend-item">
                         <span class="dot food"></span>
-                        Food<span id="foodPct">0%</span>
+                        Food <span id="foodPct">0%</span>
                     </div>
                     <div class="legend-item">
                         <span class="dot medicines"></span>
-                        Medicines<span id="medicinesPct">0%</span>
+                        Medicines <span id="medicinesPct">0%</span>
                     </div>
                     <div class="legend-item">
                         <span class="dot shopping"></span>
-                        Shopping<span id="shoppingPct">0%</span>
+                        Shopping <span id="shoppingPct">0%</span>
                     </div>
                     <div class="legend-item">
                         <span class="dot misc"></span>
-                        Misc<span id="miscPct">0%</span>
+                        Misc <span id="miscPct">0%</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="dot utility-bills"></span>
+                        Utility Bills <span id="utilityBillsPct">0%</span>
                     </div>
                 </div>
             </section>
@@ -86,40 +89,29 @@
                     <span class="limit-title">Remaining Balance</span>
                     <span class="limit-amount" id="remainingBalanceAmount">₱ 0.00 of ₱ 0.00</span>
                 </div>
-                <a href="transactions.html" class="arrow-link">&gt;</a>
+                <a href="transactions.html" class="arrow-link">&rarr;</a>
             </section>
 
             <section class="card savings-card">
                 <div class="promo-text">
-                    <h2>Current Savings!</h2>
-                    <span class="savings-amount" id="savingsAmount">₱ 0.00</span>
-                    <button class="mask-button" id="maskSavingsButton">Mask</button>
-                    <a href="savings.html" class="view-savings-button">View Savings</a>
+                    <h2>Your Savings</h2>
+                    <span class="savings-amount" id="savingsAmount">₱ ●●●,●●●.●●</span>
+                    <div>
+                        <button class="mask-button" id="maskSavingsButton">Show</button>
+                        <a href="savings.html" class="view-savings-button">View all</a>
+                    </div>
                 </div>
-                <img src="https://cdn-icons-png.flaticon.com/512/1453/1453653.png" alt="Savings Illustration" class="card-illustration">
-            </section>
-
-            <section class="card transactions-promo-card">
-                <div class="promo-text">
-                    <h2>Transactions on your hands!</h2>
-                    <a href="transactions.html" class="button">View All</a>
+                <div class="card-illustration">
+                    <img src="https://assets.api.languagetech.com/public/gemini-pro/piggy-bank.png" alt="Piggy Bank">
                 </div>
-                <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQpj4q0I_0ueCPz6ofi7pE8JMqId_ZJr1bFP4aGIm0nRpDCVV-Sx52Z-pjW&s=10" alt="Card Illustration" class="card-illustration">
             </section>
         </main>
-    </div>
-
-    <button class="fab-button" id="addTransactionFab">+</button>
-    <button class="fab-button fab-calculator" id="openCalculatorFab">CALC</button>
-
-    <div class="calculator-overlay" id="calculatorOverlay">
-        <div class="calculator-card" id="calculatorCard">
-            <div class="calculator-header">
-                <h3>Calculator</h3>
-                <button class="close-calculator-button" id="closeCalculatorButton">&times;</button>
-            </div>
-            <div class="calculator-body">
-                <input type="text" class="calculator-display" id="calculatorDisplay" value="0" readonly>
+        <div class="calculator-overlay" id="calculatorOverlay">
+            <div class="calculator-modal">
+                <div class="calculator-header">
+                    <input type="text" class="calculator-display" id="calculatorDisplay" value="0" readonly>
+                    <button class="close-calculator-button" id="closeCalculatorButton">&times;</button>
+                </div>
                 <div class="calculator-buttons">
                     <button class="calc-btn clear" data-action="clear">C</button>
                     <button class="calc-btn backspace" data-action="backspace">←</button>
