@@ -113,134 +113,187 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- Dashboard Specific Logic (index.html) ---
-    async function updateDashboard() {
+    async function updateDashboard(selectedMonth = null, selectedYear = null) {
         if (!document.getElementById('dashboard-page')) return;
-        try {
-            const response = await fetch(CSV_URL);
-            const csv = await response.text();
-            const data = parseCSV(csv);
 
-            let totalExpensesAmount = 0;
-            let totalGainsAmount = 0;
-            let totalSavingsAmount = 0; // This will now track net savings from 'savings' entries
-            // Removed 'Transportation' as a distinct category for the chart
-            const expenseCategoriesForChart = { Food: 0, Medicines: 0, Shopping: 0, Misc: 0, 'Utility Bills': 0 };
+        // If allTransactionsData is empty, fetch it first
+        if (allTransactionsData.length === 0) {
+            try {
+                const response = await fetch(CSV_URL);
+                const csv = await response.text();
+                allTransactionsData = parseCSV(csv); // Store raw data globally
+                populateYearFilter(allTransactionsData); // Populate years once data is fetched
+            } catch (error) {
+                console.error('Error fetching CSV for dashboard:', error);
+                // Handle errors gracefully
+                return;
+            }
+        }
 
-            data.forEach(entry => {
-                const amount = parseFloat(entry.Amount);
-                const entryType = entry.Type ? entry.Type.toLowerCase() : '';
-                const entryWhatKind = entry['What kind?'] ? entry['What kind?'].toLowerCase() : '';
+        let filteredData = allTransactionsData;
 
-                if (isNaN(amount) || !entryType) {
-                    console.warn('Dashboard - Skipping malformed entry:', entry);
-                    return;
+        if (selectedMonth || selectedYear) {
+            filteredData = allTransactionsData.filter(entry => {
+                const date = new Date(entry.Date);
+                const entryMonth = date.getMonth() + 1; // getMonth() is 0-indexed
+                const entryYear = date.getFullYear();
+
+                let monthMatch = true;
+                let yearMatch = true;
+
+                if (selectedMonth && selectedMonth !== '') {
+                    monthMatch = (entryMonth === parseInt(selectedMonth));
+                }
+                if (selectedYear && selectedYear !== '') {
+                    yearMatch = (entryYear === parseInt(selectedYear));
                 }
 
-                if (entryType === 'expenses') {
-                    totalExpensesAmount += amount;
-                    if (entryWhatKind === 'food' || entryWhatKind === 'groceries') expenseCategoriesForChart.Food += amount;
-                    else if (entryWhatKind === 'medicines') expenseCategoriesForChart.Medicines += amount;
-                    else if (entryWhatKind === 'online shopping') expenseCategoriesForChart.Shopping += amount;
-                    // Transportation now falls under 'Misc'
-                    else if (entryWhatKind === 'utility bills') expenseCategoriesForChart['Utility Bills'] += amount;
-                    else expenseCategoriesForChart.Misc += amount; // This is the fallback for categories not explicitly handled, now includes transportation
+                return monthMatch && yearMatch;
+            });
+        }
 
-                    // Deduct from savings if it's an expense marked as 'savings'
-                    if (entryWhatKind === 'savings') {
-                        totalSavingsAmount -= amount;
-                    }
 
-                } else if (entryType === 'gains') {
-                    totalGainsAmount += amount;
-                    // Add to totalSavingsAmount if it's a 'savings' or 'savings contribution' gain
-                    if (entryWhatKind === 'savings contribution' || entryWhatKind === 'savings') {
-                        totalSavingsAmount += amount;
-                    }
+        let totalExpensesAmount = 0;
+        let totalGainsAmount = 0;
+        let totalSavingsAmount = 0;
+        // Removed 'Transportation' as a distinct category for the chart
+        const expenseCategoriesForChart = { Food: 0, Medicines: 0, Shopping: 0, Misc: 0, 'Utility Bills': 0 };
+
+        filteredData.forEach(entry => {
+            const amount = parseFloat(entry.Amount);
+            const entryType = entry.Type ? entry.Type.toLowerCase() : '';
+            const entryWhatKind = entry['What kind?'] ? entry['What kind?'].toLowerCase() : '';
+
+            if (isNaN(amount) || !entryType) {
+                console.warn('Dashboard - Skipping malformed entry:', entry);
+                return;
+            }
+
+            if (entryType === 'expenses') {
+                totalExpensesAmount += amount;
+                if (entryWhatKind === 'food' || entryWhatKind === 'groceries') expenseCategoriesForChart.Food += amount;
+                else if (entryWhatKind === 'medicines') expenseCategoriesForChart.Medicines += amount;
+                else if (entryWhatKind === 'online shopping') expenseCategoriesForChart.Shopping += amount;
+                // Transportation now falls under 'Misc'
+                else if (entryWhatKind === 'utility bills') expenseCategoriesForChart['Utility Bills'] += amount;
+                else expenseCategoriesForChart.Misc += amount; // This is the fallback for categories not explicitly handled, now includes transportation
+
+                // Deduct from savings if it's an expense marked as 'savings'
+                if (entryWhatKind === 'savings') {
+                    totalSavingsAmount -= amount;
+                }
+
+            } else if (entryType === 'gains') {
+                totalGainsAmount += amount;
+                // Add to totalSavingsAmount if it's a 'savings' or 'savings contribution' gain
+                if (entryWhatKind === 'savings contribution' || entryWhatKind === 'savings') {
+                    totalSavingsAmount += amount;
+                }
+            }
+        });
+
+        document.getElementById('netExpenseValue').textContent = formatCurrency(totalExpensesAmount);
+        const remainingBalance = totalGainsAmount - totalExpensesAmount;
+        const totalIncomeOrBudget = totalGainsAmount;
+        document.getElementById('remainingBalanceAmount').textContent = `${formatCurrency(remainingBalance)} of ${formatCurrency(totalIncomeOrBudget)}`;
+        let remainingBalancePercentage = totalIncomeOrBudget > 0 ? (remainingBalance / totalIncomeOrBudget) * 100 : 0;
+        const displayPercentage = isNaN(remainingBalancePercentage) ? 0 : Math.round(remainingBalancePercentage);
+        document.getElementById('remainingBalancePct').textContent = `${displayPercentage}%`;
+
+        let progressOffset = 0;
+        let progressColor = 'var(--accent-green)';
+        const radius = 34;
+        const circumference = 2 * Math.PI * radius;
+
+        if (displayPercentage >= 100) progressOffset = 0;
+        else if (displayPercentage > 0) {
+            progressOffset = circumference - (displayPercentage / 100) * circumference;
+            if (displayPercentage < 25) progressColor = 'var(--accent-red)';
+            else if (displayPercentage < 50) progressColor = 'var(--accent-orange)';
+        } else {
+            progressOffset = circumference;
+            progressColor = 'var(--accent-red)';
+        }
+        const progressCircle = document.querySelector('.progress-ring-progress');
+        if (progressCircle) {
+            progressCircle.style.strokeDasharray = `${circumference} ${circumference}`;
+            progressCircle.style.strokeDashoffset = progressOffset;
+            progressCircle.style.stroke = progressColor;
+        }
+
+        // Filter category names based on the updated expenseCategoriesForChart
+        const categoryNames = Object.keys(expenseCategoriesForChart).filter(cat => expenseCategoriesForChart[cat] > 0);
+        const categoryAmounts = categoryNames.map(cat => expenseCategoriesForChart[cat]);
+        const totalCategoryExpenseForChart = categoryAmounts.reduce((sum, amount) => sum + amount, 0);
+
+        // Dynamically update legend percentages
+        document.getElementById('foodPct').textContent = `${totalCategoryExpenseForChart > 0 ? Math.round((expenseCategoriesForChart.Food / totalCategoryExpenseForChart) * 100) : 0}%`;
+        document.getElementById('medicinesPct').textContent = `${totalCategoryExpenseForChart > 0 ? Math.round((expenseCategoriesForChart.Medicines / totalCategoryExpenseForChart) * 100) : 0}%`;
+        document.getElementById('shoppingPct').textContent = `${totalCategoryExpenseForChart > 0 ? Math.round((expenseCategoriesForChart.Shopping / totalCategoryExpenseForChart) * 100) : 0}%`;
+        document.getElementById('miscPct').textContent = `${totalCategoryExpenseForChart > 0 ? Math.round((expenseCategoriesForChart.Misc / totalCategoryExpenseForChart) * 100) : 0}%`;
+        // Ensure Utility Bills is also updated
+        document.getElementById('utilityBillsPct').textContent = `${totalCategoryExpenseForChart > 0 ? Math.round((expenseCategoriesForChart['Utility Bills'] / totalCategoryExpenseForChart) * 100) : 0}%`;
+
+
+        const ctx = document.getElementById('expenseChart');
+        if (ctx) {
+            if (window.expenseChartInstance) window.expenseChartInstance.destroy();
+
+            // Explicit color mapping based on category for Chart.js - 'Transportation' removed from here
+            const categoryColorMap = {
+                'Food': getComputedStyle(document.documentElement).getPropertyValue('--accent-green').trim(),
+                'Medicines': getComputedStyle(document.documentElement).getPropertyValue('--accent-red').trim(),
+                'Shopping': getComputedStyle(document.documentElement).getPropertyValue('--accent-orange').trim(),
+                'Misc': getComputedStyle(document.documentElement).getPropertyValue('--accent-blue').trim(),
+                'Utility Bills': '#FFEB3B', // A distinct yellow for Utility Bills
+            };
+
+            const chartBackgroundColors = categoryNames.map(cat => categoryColorMap[cat] || 'gray'); // Default to gray if category not mapped
+
+            window.expenseChartInstance = new Chart(ctx.getContext('2d'), {
+                type: 'doughnut',
+                data: {
+                    labels: categoryNames,
+                    datasets: [{
+                        data: categoryAmounts,
+                        backgroundColor: chartBackgroundColors, // Use the mapped colors
+                        borderColor: 'var(--card-bg)',
+                        borderWidth: 4,
+                    }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false, cutout: '80%',
+                    plugins: { legend: { display: false }, tooltip: { callbacks: { label: (c) => `${c.label}: ${formatCurrency(c.parsed)}` } } }
                 }
             });
-
-            document.getElementById('netExpenseValue').textContent = formatCurrency(totalExpensesAmount);
-            const remainingBalance = totalGainsAmount - totalExpensesAmount;
-            const totalIncomeOrBudget = totalGainsAmount;
-            document.getElementById('remainingBalanceAmount').textContent = `${formatCurrency(remainingBalance)} of ${formatCurrency(totalIncomeOrBudget)}`;
-            let remainingBalancePercentage = totalIncomeOrBudget > 0 ? (remainingBalance / totalIncomeOrBudget) * 100 : 0;
-            const displayPercentage = isNaN(remainingBalancePercentage) ? 0 : Math.round(remainingBalancePercentage);
-            document.getElementById('remainingBalancePct').textContent = `${displayPercentage}%`;
-
-            let progressOffset = 0;
-            let progressColor = 'var(--accent-green)';
-            const radius = 34;
-            const circumference = 2 * Math.PI * radius;
-
-            if (displayPercentage >= 100) progressOffset = 0;
-            else if (displayPercentage > 0) {
-                progressOffset = circumference - (displayPercentage / 100) * circumference;
-                if (displayPercentage < 25) progressColor = 'var(--accent-red)';
-                else if (displayPercentage < 50) progressColor = 'var(--accent-orange)';
-            } else {
-                progressOffset = circumference;
-                progressColor = 'var(--accent-red)';
-            }
-            const progressCircle = document.querySelector('.progress-ring-progress');
-            if (progressCircle) {
-                progressCircle.style.strokeDasharray = `${circumference} ${circumference}`;
-                progressCircle.style.strokeDashoffset = progressOffset;
-                progressCircle.style.stroke = progressColor;
-            }
-
-            // Filter category names based on the updated expenseCategoriesForChart
-            const categoryNames = Object.keys(expenseCategoriesForChart).filter(cat => expenseCategoriesForChart[cat] > 0);
-            const categoryAmounts = categoryNames.map(cat => expenseCategoriesForChart[cat]);
-            const totalCategoryExpenseForChart = categoryAmounts.reduce((sum, amount) => sum + amount, 0);
-
-            // Dynamically update legend percentages
-            document.getElementById('foodPct').textContent = `${totalCategoryExpenseForChart > 0 ? Math.round((expenseCategoriesForChart.Food / totalCategoryExpenseForChart) * 100) : 0}%`;
-            document.getElementById('medicinesPct').textContent = `${totalCategoryExpenseForChart > 0 ? Math.round((expenseCategoriesForChart.Medicines / totalCategoryExpenseForChart) * 100) : 0}%`;
-            document.getElementById('shoppingPct').textContent = `${totalCategoryExpenseForChart > 0 ? Math.round((expenseCategoriesForChart.Shopping / totalCategoryExpenseForChart) * 100) : 0}%`;
-            document.getElementById('miscPct').textContent = `${totalCategoryExpenseForChart > 0 ? Math.round((expenseCategoriesForChart.Misc / totalCategoryExpenseForChart) * 100) : 0}%`;
-
-
-            const ctx = document.getElementById('expenseChart');
-            if (ctx) {
-                if (window.expenseChartInstance) window.expenseChartInstance.destroy();
-
-                // Explicit color mapping based on category for Chart.js - 'Transportation' removed from here
-                const categoryColorMap = {
-                    'Food': getComputedStyle(document.documentElement).getPropertyValue('--accent-green').trim(),
-                    'Medicines': getComputedStyle(document.documentElement).getPropertyValue('--accent-red').trim(),
-                    'Shopping': getComputedStyle(document.documentElement).getPropertyValue('--accent-orange').trim(),
-                    'Misc': getComputedStyle(document.documentElement).getPropertyValue('--accent-blue').trim(),
-                    'Utility Bills': '#FFEB3B', // A distinct yellow for Utility Bills
-                };
-
-                const chartBackgroundColors = categoryNames.map(cat => categoryColorMap[cat] || 'gray'); // Default to gray if category not mapped
-
-                window.expenseChartInstance = new Chart(ctx.getContext('2d'), {
-                    type: 'doughnut',
-                    data: {
-                        labels: categoryNames,
-                        datasets: [{
-                            data: categoryAmounts,
-                            backgroundColor: chartBackgroundColors, // Use the mapped colors
-                            borderColor: 'var(--card-bg)',
-                            borderWidth: 4,
-                        }]
-                    },
-                    options: {
-                        responsive: true, maintainAspectRatio: false, cutout: '80%',
-                        plugins: { legend: { display: false }, tooltip: { callbacks: { label: (c) => `${c.label}: ${formatCurrency(c.parsed)}` } } }
-                    }
-                });
-            }
-            const savingsAmountSpan = document.getElementById('savingsAmount');
-            if (savingsAmountSpan) {
-                savingsAmountSpan.dataset.actualAmount = totalSavingsAmount;
-                savingsAmountSpan.textContent = formatCurrency(totalSavingsAmount);
-            }
-        } catch (error) {
-            console.error('Error fetching or processing CSV for dashboard:', error);
-            // Handle errors gracefully
         }
+        const savingsAmountSpan = document.getElementById('savingsAmount');
+        if (savingsAmountSpan) {
+            savingsAmountSpan.dataset.actualAmount = totalSavingsAmount;
+            savingsAmountSpan.textContent = formatCurrency(totalSavingsAmount);
+        }
+    }
+
+    function populateYearFilter(data) {
+        const yearFilter = document.getElementById('yearFilter');
+        if (!yearFilter) return;
+
+        const years = new Set();
+        data.forEach(entry => {
+            const date = new Date(entry.Date);
+            if (!isNaN(date.getFullYear())) {
+                years.add(date.getFullYear());
+            }
+        });
+
+        // Clear existing options except "All Years"
+        yearFilter.innerHTML = '<option value="">All Years</option>';
+        Array.from(years).sort().forEach(year => {
+            const option = document.createElement('option');
+            option.value = year;
+            option.textContent = year;
+            yearFilter.appendChild(option);
+        });
     }
 
     const maskSavingsButton = document.getElementById('maskSavingsButton');
@@ -392,7 +445,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const amount = parseFloat(entry.Amount);
             const date = new Date(entry.Date); // CSV Date
             const entryType = entry.Type ? entry.Type.toLowerCase() : '';
-            const entryWhatKind = entry['What kind?'] ? entry['What kind?'].toLowerCase() : ''; // Get 'What kind?' for filtering
+            const entryWhatKind = entry['What kind?'] ? entry['What kind?'].toLowerCase() : '';
 
             if (isNaN(amount) || isNaN(date.getTime()) || !entryType) { // Check date validity
                 console.warn('Skipping malformed entry:', entry);
@@ -485,7 +538,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 categoryIconDiv.textContent = categoryIcon; itemDiv.appendChild(categoryIconDiv);
                 const detailsDiv = document.createElement('div'); detailsDiv.classList.add('transaction-details');
                 const nameSpan = document.createElement('span'); nameSpan.classList.add('transaction-name');
-                nameSpan.textContent = entry.Description || entry['What kind?'] || 'N/A'; detailsDiv.appendChild(nameSpan);
+                nameSpan.textContent = entry.Description || entry['What kind'] || 'N/A'; detailsDiv.appendChild(nameSpan);
                 const timeSpan = document.createElement('span'); timeSpan.classList.add('transaction-time');
                 timeSpan.textContent = entry.Time || ''; detailsDiv.appendChild(timeSpan);
                 itemDiv.appendChild(detailsDiv);
@@ -807,7 +860,48 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Initialize page-specific functions
     if (document.getElementById('dashboard-page')) {
-        updateDashboard();
+        // Dashboard filter elements
+        const dashboardFilterButton = document.getElementById('dashboardFilterButton');
+        const dashboardFilterOptions = document.getElementById('dashboardFilterOptions');
+        const monthFilter = document.getElementById('monthFilter');
+        const yearFilter = document.getElementById('yearFilter');
+        const applyDashboardFilterBtn = document.getElementById('applyDashboardFilterBtn');
+        const clearDashboardFilterBtn = document.getElementById('clearDashboardFilterBtn');
+
+        if (dashboardFilterButton) {
+            dashboardFilterButton.addEventListener('click', (event) => {
+                event.stopPropagation(); // Prevent document click from closing it immediately
+                dashboardFilterOptions.classList.toggle('active');
+            });
+            // Close filter options if clicked outside
+            document.addEventListener('click', (event) => {
+                if (dashboardFilterOptions.classList.contains('active') &&
+                    !dashboardFilterOptions.contains(event.target) &&
+                    !dashboardFilterButton.contains(event.target)) {
+                    dashboardFilterOptions.classList.remove('active');
+                }
+            });
+        }
+
+        if (applyDashboardFilterBtn) {
+            applyDashboardFilterBtn.addEventListener('click', () => {
+                const selectedMonth = monthFilter.value;
+                const selectedYear = yearFilter.value;
+                updateDashboard(selectedMonth, selectedYear);
+                dashboardFilterOptions.classList.remove('active'); // Close dropdown after applying
+            });
+        }
+
+        if (clearDashboardFilterBtn) {
+            clearDashboardFilterBtn.addEventListener('click', () => {
+                monthFilter.value = '';
+                yearFilter.value = '';
+                updateDashboard(); // Call with no arguments to show all data
+                dashboardFilterOptions.classList.remove('active'); // Close dropdown after clearing
+            });
+        }
+
+        updateDashboard(); // Initial dashboard update on page load
     } else if (document.getElementById('transactions-page')) {
         const filterButton = document.getElementById('filterButton');
         const filterOptionsContainer = document.getElementById('filterOptionsContainer');
