@@ -1,6 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
-    const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQgMFbI8pivLbRpc2nL2Gyoxw47PmXEVxvUDJjr-t86gj4-J3QM8uV7m8iJN9wxlYo3IY5FQqqUICei/pub?output=csv';
-    const GOOGLE_FORM_URL = 'https://docs.google.com/forms/d/e/1FAIpQLSdrDJoOeo264aOn4g2UE-K-FHpbssBAVmEtOWoW46Q1cwjgg/viewform?usp=header';
+    const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQgMFbI8pivLbRpc2nL2Gyoxw47PmXEVxvUDrjr-t86gj4-J3QM8uV7m8iJN9wxlYo3IY5FQqqUICei/pub?output=csv';
+    const GOOGLE_FORM_URL = 'https://docs.google.com/forms/d/e/1FAIpQLSdrDJoOeo264aOn4g2UEe-K-FHpbssBAVmEtOWoW46Q1cwjgg/viewform?usp=header';
 
     // --- Pagination Globals ---
     const ITEMS_PER_PAGE = 15;
@@ -62,7 +62,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 case 'food': case 'groceries': category = 'Food'; icon = '🍔'; break;
                 case 'medicines': category = 'Medicines'; icon = '💊'; break;
                 case 'online shopping': category = 'Shopping'; icon = '🛍️'; break;
-                case 'transportation': category = 'Transportation'; icon = '🚌'; break;
+                case 'transportation': icon = '🚌'; break;
                 case 'utility bills': category = 'Utility Bills'; icon = '💡'; break;
                 case 'savings': // Handle "savings" as an expense type for deductions
                     icon = '📉'; // A distinct icon for savings deductions
@@ -156,7 +156,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             let totalExpensesAmount = 0;
             let totalGainsAmount = 0;
-            let totalSavingsAmount = 0;
+            let totalSavingsAmount = 0; // Initialize savings total
             const expenseCategoriesForChart = { Food: 0, Medicines: 0, Shopping: 0, Misc: 0 };
 
             allTransactionsData.forEach(entry => {
@@ -188,16 +188,16 @@ document.addEventListener('DOMContentLoaded', () => {
                     else if (entryWhatKind === 'online shopping') expenseCategoriesForChart.Shopping += amount;
                     else expenseCategoriesForChart.Misc += amount; // All other expenses go to Misc
 
-                    // Add to totalSavingsAmount if it's an expense marked as 'savings'
+                    // REVERSED LOGIC: Expenses (type 'expenses', kind 'savings') ADD to total savings
                     if (entryWhatKind === 'savings') {
-                        totalSavingsAmount += amount; // Reversed logic: expenses add to savings
+                        totalSavingsAmount += amount;
                     }
 
                 } else if (entryType === 'gains') {
                     totalGainsAmount += amount;
-                    // Deduct from totalSavingsAmount if it's a 'savings' or 'savings contribution' gain
+                    // REVERSED LOGIC: Gains (type 'gains', kind 'savings contribution' or 'savings') DEDUCT from total savings
                     if (entryWhatKind === 'savings contribution' || entryWhatKind === 'savings') {
-                        totalSavingsAmount -= amount; // Reversed logic: gains deduct from savings
+                        totalSavingsAmount -= amount;
                     }
                 }
             });
@@ -616,10 +616,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 const isSavingsEntry = (entryWhatKind === 'savings' || entryWhatKind === 'savings contribution') && !isNaN(amount);
 
                 if (isSavingsEntry) {
+                    // REVERSED LOGIC: Gains (type 'gains', kind 'savings contribution' or 'savings') DEDUCT from overall savings
                     if (entryType === 'gains') {
-                        overallTotalSavings -= amount; // Reversed logic: gains deduct from total savings
-                    } else if (entryType === 'expenses') {
-                        overallTotalSavings += amount; // Reversed logic: expenses add to total savings
+                        overallTotalSavings -= amount;
+                    } 
+                    // REVERSED LOGIC: Expenses (type 'expenses', kind 'savings') ADD to overall savings
+                    else if (entryType === 'expenses') {
+                        overallTotalSavings += amount;
                     }
                 }
                 return isSavingsEntry; // Only keep these entries for display
@@ -920,7 +923,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const currentMonthBtn = document.querySelector(`.months-nav .month-button[data-month="${currentMonth}"]`);
                 if (currentMonthBtn) currentMonthBtn.classList.add('active');
                 renderTransactions(currentMonth);
-                filterOptionsContainer.style.display = 'none';
+                if(filterOptionsContainer) filterOptionsContainer.style.display = 'none';
             });
         }
         monthButtons.forEach(button => {
