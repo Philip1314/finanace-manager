@@ -1,7 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
     const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQgMFbI8pivLbRpc2nL2Gyoxw47PmXEVxvUDrjr-t86gj4-J3QM8uV7m8iJN9wxlYo3IY5FQqqUICei/pub?output=csv';
     const GOOGLE_FORM_URL = 'https://docs.google.com/forms/d/e/1FAIpQLSdrDJoOeo264aOn4g2UEe-K-FHpbssBAVmEtOWoW46Q1cwjgg/viewform?usp=header';
-    // SAVINGS_GOAL_KEY is no longer needed for savings page display logic
 
     // --- Pagination Globals ---
     const ITEMS_PER_PAGE = 15;
@@ -53,7 +52,9 @@ document.addEventListener('DOMContentLoaded', () => {
             switch (lowerCaseWhatKind) {
                 case 'salary': icon = '💸'; break;
                 case 'allowance': icon = '🎁'; break;
-                case 'savings contribution': icon = '💰'; break;
+                case 'savings contribution':
+                case 'savings': // Also handle "savings" as a gain type
+                    icon = '💰'; break;
                 default: icon = '💰'; break;
             }
         } else if (lowerCaseType === 'expenses') {
@@ -63,6 +64,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 case 'online shopping': category = 'Shopping'; icon = '🛍️'; break;
                 case 'transportation': category = 'Transportation'; icon = '🚌'; break;
                 case 'utility bills': category = 'Utility Bills'; icon = '💡'; break;
+                case 'savings': // Handle "savings" as an expense type for deductions
+                    icon = '📉'; // A distinct icon for savings deductions
+                    break;
                 default: category = 'Misc'; icon = '✨'; break;
             }
         }
@@ -118,8 +122,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
             let totalExpensesAmount = 0;
             let totalGainsAmount = 0;
-            let totalSavingsAmount = 0; // This will now *only* count actual 'savings contribution' gains
-            const expenseCategoriesForChart = { Food: 0, Medicines: 0, Shopping: 0, Misc: 0, Transportation: 0, 'Utility Bills': 0 }; // Added more categories
+            let totalSavingsAmount = 0; // This will now track net savings from 'savings' entries
+            const expenseCategoriesForChart = { Food: 0, Medicines: 0, Shopping: 0, Misc: 0, Transportation: 0, 'Utility Bills': 0 };
 
             data.forEach(entry => {
                 const amount = parseFloat(entry.Amount);
@@ -139,10 +143,16 @@ document.addEventListener('DOMContentLoaded', () => {
                     else if (entryWhatKind === 'transportation') expenseCategoriesForChart.Transportation += amount;
                     else if (entryWhatKind === 'utility bills') expenseCategoriesForChart['Utility Bills'] += amount;
                     else expenseCategoriesForChart.Misc += amount;
+
+                    // Deduct from savings if it's an expense marked as 'savings'
+                    if (entryWhatKind === 'savings') {
+                        totalSavingsAmount -= amount;
+                    }
+
                 } else if (entryType === 'gains') {
                     totalGainsAmount += amount;
-                    // Only add to totalSavingsAmount if it's a 'savings contribution'
-                    if (entryWhatKind === 'savings contribution') {
+                    // Add to totalSavingsAmount if it's a 'savings' or 'savings contribution' gain
+                    if (entryWhatKind === 'savings contribution' || entryWhatKind === 'savings') {
                         totalSavingsAmount += amount;
                     }
                 }
@@ -177,8 +187,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 progressCircle.style.stroke = progressColor;
             }
 
-            // Update chart logic for potentially more categories
-            const categoryNames = Object.keys(expenseCategoriesForChart).filter(cat => expenseCategoriesForChart[cat] > 0); // Only show categories with expenses
+            const categoryNames = Object.keys(expenseCategoriesForChart).filter(cat => expenseCategoriesForChart[cat] > 0);
             const categoryAmounts = categoryNames.map(cat => expenseCategoriesForChart[cat]);
             const totalCategoryExpenseForChart = categoryAmounts.reduce((sum, amount) => sum + amount, 0);
 
@@ -200,11 +209,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     'Shopping': getComputedStyle(document.documentElement).getPropertyValue('--accent-orange').trim(),
                     'Misc': getComputedStyle(document.documentElement).getPropertyValue('--accent-blue').trim(),
                     'Transportation': getComputedStyle(document.documentElement).getPropertyValue('--accent-purple').trim(),
-                    'Utility Bills': '#FFEB3B', // Using a distinct color for Utility Bills
+                    'Utility Bills': '#FFEB3B', // A distinct yellow for Utility Bills
                 };
 
-                // Generate colors for the chart based on the order of categoryNames
-                const chartBackgroundColors = categoryNames.map(cat => categoryColorMap[cat] || 'gray'); // Default to gray if a category is not mapped
+                const chartBackgroundColors = categoryNames.map(cat => categoryColorMap[cat] || 'gray'); // Default to gray if category not mapped
 
                 window.expenseChartInstance = new Chart(ctx.getContext('2d'), {
                     type: 'doughnut',
@@ -356,6 +364,13 @@ document.addEventListener('DOMContentLoaded', () => {
         if (sortedCategories.includes('Expenses')) { prioritized.push('Expenses'); sortedCategories.splice(sortedCategories.indexOf('Expenses'), 1); }
         
         prioritized.push(...sortedCategories.filter(cat => !['salary', 'allowance', 'savings contribution'].includes(cat.toLowerCase()))); // Avoid redundant sub-categories if "Gains" is chosen
+        // Ensure 'Savings' is a filter option for transactions page if it exists
+        if (sortedCategories.includes('Savings')) {
+             if (!prioritized.includes('Savings')) {
+                 prioritized.push('Savings');
+             }
+        }
+
 
         prioritized.forEach(category => {
             if (category) {
@@ -376,7 +391,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const amount = parseFloat(entry.Amount);
             const date = new Date(entry.Date); // CSV Date
             const entryType = entry.Type ? entry.Type.toLowerCase() : '';
-            // const entryWhatKind = entry['What kind?'] ? entry['What kind?'].toLowerCase() : '';
+            const entryWhatKind = entry['What kind?'] ? entry['What kind?'].toLowerCase() : ''; // Get 'What kind?' for filtering
 
             if (isNaN(amount) || isNaN(date.getTime()) || !entryType) { // Check date validity
                 console.warn('Skipping malformed entry:', entry);
@@ -390,12 +405,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (selectedCategory) {
                 const lowerCaseSelectedCategory = selectedCategory.toLowerCase();
-                const actualCategoryInEntry = entry['What kind?'] ? entry['What kind?'].toLowerCase() : '';
-                const entryCategoryType = entry.Type ? entry.Type.toLowerCase() : '';
-
-                if (lowerCaseSelectedCategory === 'gains') { if (entryCategoryType !== 'gains') return false; }
-                else if (lowerCaseSelectedCategory === 'expenses') { if (entryCategoryType !== 'expenses') return false; }
-                else if (actualCategoryInEntry !== lowerCaseSelectedCategory && entryCategoryType !== lowerCaseSelectedCategory) return false; // Check against 'What kind?' or main type
+                
+                if (lowerCaseSelectedCategory === 'gains') { 
+                    if (entryType !== 'gains') return false; 
+                } else if (lowerCaseSelectedCategory === 'expenses') { 
+                    if (entryType !== 'expenses') return false; 
+                } else if (entryWhatKind !== lowerCaseSelectedCategory) { // Filter by 'What kind?'
+                    return false; 
+                }
             }
 
             if (startDate && endDate) {
@@ -458,6 +475,9 @@ document.addEventListener('DOMContentLoaded', () => {
                         case 'food': categoryIconDiv.classList.add('category-food'); break;
                         case 'medicines': categoryIconDiv.classList.add('category-medicines'); break;
                         case 'shopping': categoryIconDiv.classList.add('category-shopping'); break;
+                        case 'transportation': categoryIconDiv.classList.add('category-transportation'); break; // Ensure this is styled in CSS
+                        case 'utility bills': categoryIconDiv.classList.add('category-utility-bills'); break; // Ensure this is styled in CSS
+                        case 'savings': categoryIconDiv.classList.add('category-savings-expense'); break; // New class for savings expense
                         default: categoryIconDiv.classList.add('category-misc'); break;
                     }
                 }
@@ -506,16 +526,22 @@ document.addEventListener('DOMContentLoaded', () => {
             const allData = parseCSV(csv);
 
             let overallTotalSavings = 0;
-            // Filter and calculate savings based *only* on 'savings contribution' entries
+            // Filter and calculate savings based *only* on 'savings' or 'savings contribution' entries
             allSavingsDataGlobal = allData.filter(entry => {
                 const amount = parseFloat(entry.Amount);
-                const isSavingsContribution = entry.Type && entry.Type.toLowerCase() === 'gains' &&
-                                             entry['What kind?'] && entry['What kind?'].toLowerCase() === 'savings contribution' &&
-                                             !isNaN(amount);
-                if (isSavingsContribution) {
-                    overallTotalSavings += amount;
+                const entryType = entry.Type ? entry.Type.toLowerCase() : '';
+                const entryWhatKind = entry['What kind?'] ? entry['What kind?'].toLowerCase() : '';
+
+                const isSavingsEntry = (entryWhatKind === 'savings' || entryWhatKind === 'savings contribution') && !isNaN(amount);
+
+                if (isSavingsEntry) {
+                    if (entryType === 'gains') {
+                        overallTotalSavings += amount;
+                    } else if (entryType === 'expenses') {
+                        overallTotalSavings -= amount;
+                    }
                 }
-                return isSavingsContribution;
+                return isSavingsEntry; // Only keep these entries for display
             });
             
             if (totalSavingsAmountSpan) totalSavingsAmountSpan.textContent = formatCurrency(overallTotalSavings);
@@ -583,17 +609,28 @@ document.addEventListener('DOMContentLoaded', () => {
                 return timeA[2] - timeB[2];
             }).forEach(entry => {
                 const itemDiv = document.createElement('div'); itemDiv.classList.add('transaction-item');
-                // For savings entries, icon and color are fixed
-                const categoryIconDiv = document.createElement('div'); categoryIconDiv.classList.add('transaction-category-icon', 'category-gain');
-                categoryIconDiv.textContent = '💰'; itemDiv.appendChild(categoryIconDiv);
+                const categoryIconDiv = document.createElement('div'); categoryIconDiv.classList.add('transaction-category-icon');
+                const amountSpan = document.createElement('span'); amountSpan.classList.add('transaction-amount');
+
+                if (entry.Type && entry.Type.toLowerCase() === 'gains') {
+                    categoryIconDiv.classList.add('category-gain');
+                    categoryIconDiv.textContent = '💰'; // Money bag for gains
+                    amountSpan.classList.add('gain');
+                } else if (entry.Type && entry.Type.toLowerCase() === 'expenses') {
+                    categoryIconDiv.classList.add('category-expense'); // Or a more specific class if needed for styling
+                    categoryIconDiv.textContent = '📉'; // Downward trend for expenses
+                    amountSpan.classList.add('expense');
+                }
+                itemDiv.appendChild(categoryIconDiv);
                 
                 const detailsDiv = document.createElement('div'); detailsDiv.classList.add('transaction-details');
                 const nameSpan = document.createElement('span'); nameSpan.classList.add('transaction-name');
-                nameSpan.textContent = entry.Description || 'Savings Contribution'; detailsDiv.appendChild(nameSpan);
+                nameSpan.textContent = entry.Description || (entry.Type && entry.Type.toLowerCase() === 'gains' ? 'Savings Contribution' : 'Savings Withdrawal'); 
+                detailsDiv.appendChild(nameSpan);
                 const timeSpan = document.createElement('span'); timeSpan.classList.add('transaction-time');
                 timeSpan.textContent = entry.Time || ''; detailsDiv.appendChild(timeSpan);
                 itemDiv.appendChild(detailsDiv);
-                const amountSpan = document.createElement('span'); amountSpan.classList.add('transaction-amount', 'gain');
+                
                 amountSpan.textContent = formatCurrency(entry.Amount); itemDiv.appendChild(amountSpan);
                 groupDiv.appendChild(itemDiv);
             });
@@ -601,7 +638,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         
         if (paginatedData.length === 0) {
-            savingsListDiv.innerHTML = `<p style="text-align: center; color: var(--text-light); padding: 2rem;">No savings contributions ${totalItems > 0 ? 'on this page.' : 'found.'}</p>`;
+            savingsListDiv.innerHTML = `<p style="text-align: center; color: var(--text-light); padding: 2rem;">No savings contributions or withdrawals ${totalItems > 0 ? 'on this page.' : 'found.'}</p>`;
         }
 
         setupPaginationControls(paginationControlsDiv, totalPages, currentSavingsPage, (newPage) => {
@@ -653,6 +690,7 @@ document.addEventListener('DOMContentLoaded', () => {
         updateDisplay();
     }
 
+    // ***** CALCULATOR FIX: Changed keys in performCalculation *****
     const performCalculation = {
         'divide': (first, second) => second === 0 ? 'Error' : first / second,
         'multiply': (first, second) => first * second,
