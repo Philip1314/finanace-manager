@@ -63,7 +63,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 case 'online shopping': category = 'Shopping'; icon = '🛍️'; break;
                 case 'transportation': category = 'Transportation'; icon = '🚌'; break;
                 case 'utility bills': category = 'Utility Bills'; icon = '💡'; break;
-                // Removed 'allowance' mapping to 'Misc' for expenses as it could be ambiguous with gains. Default is 'Misc'.
                 default: category = 'Misc'; icon = '✨'; break;
             }
         }
@@ -119,7 +118,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             let totalExpensesAmount = 0;
             let totalGainsAmount = 0;
-            let totalSavingsAmount = 0; // This will now represent net savings
+            let totalSavingsAmount = 0; // This will now *only* count actual 'savings contribution' gains
             const expenseCategoriesForChart = { Food: 0, Medicines: 0, Shopping: 0, Misc: 0, Transportation: 0, 'Utility Bills': 0 }; // Added more categories
 
             data.forEach(entry => {
@@ -127,14 +126,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 const entryType = entry.Type ? entry.Type.toLowerCase() : '';
                 const entryWhatKind = entry['What kind?'] ? entry['What kind?'].toLowerCase() : '';
 
-                if (isNaN(amount) || !entryType) { // Removed !entryWhatKind check as it might be empty for some valid entries
+                if (isNaN(amount) || !entryType) {
                     console.warn('Dashboard - Skipping malformed entry:', entry);
                     return;
                 }
 
                 if (entryType === 'expenses') {
                     totalExpensesAmount += amount;
-                    totalSavingsAmount -= amount; // Deduct from savings
                     if (entryWhatKind === 'food' || entryWhatKind === 'groceries') expenseCategoriesForChart.Food += amount;
                     else if (entryWhatKind === 'medicines') expenseCategoriesForChart.Medicines += amount;
                     else if (entryWhatKind === 'online shopping') expenseCategoriesForChart.Shopping += amount;
@@ -143,7 +141,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     else expenseCategoriesForChart.Misc += amount;
                 } else if (entryType === 'gains') {
                     totalGainsAmount += amount;
-                    totalSavingsAmount += amount; // Add to savings
+                    // Only add to totalSavingsAmount if it's a 'savings contribution'
+                    if (entryWhatKind === 'savings contribution') {
+                        totalSavingsAmount += amount;
+                    }
                 }
             });
 
@@ -181,7 +182,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const categoryAmounts = categoryNames.map(cat => expenseCategoriesForChart[cat]);
             const totalCategoryExpenseForChart = categoryAmounts.reduce((sum, amount) => sum + amount, 0);
 
-            // Dynamically update legend percentages - simplified example, you might want all categories in legend
+            // Dynamically update legend percentages
             document.getElementById('foodPct').textContent = `${totalCategoryExpenseForChart > 0 ? Math.round((expenseCategoriesForChart.Food / totalCategoryExpenseForChart) * 100) : 0}%`;
             document.getElementById('medicinesPct').textContent = `${totalCategoryExpenseForChart > 0 ? Math.round((expenseCategoriesForChart.Medicines / totalCategoryExpenseForChart) * 100) : 0}%`;
             document.getElementById('shoppingPct').textContent = `${totalCategoryExpenseForChart > 0 ? Math.round((expenseCategoriesForChart.Shopping / totalCategoryExpenseForChart) * 100) : 0}%`;
@@ -191,21 +192,27 @@ document.addEventListener('DOMContentLoaded', () => {
             const ctx = document.getElementById('expenseChart');
             if (ctx) {
                 if (window.expenseChartInstance) window.expenseChartInstance.destroy();
-                const chartColors = [ // Ensure enough colors if more categories are prominent
-                    getComputedStyle(document.documentElement).getPropertyValue('--accent-green').trim(),
-                    getComputedStyle(document.documentElement).getPropertyValue('--accent-red').trim(),
-                    getComputedStyle(document.documentElement).getPropertyValue('--accent-orange').trim(),
-                    getComputedStyle(document.documentElement).getPropertyValue('--accent-blue').trim(),
-                    getComputedStyle(document.documentElement).getPropertyValue('--accent-purple').trim(), // Added purple
-                    '#FFEB3B', // Yellow
-                ];
+
+                // Explicit color mapping based on category for Chart.js
+                const categoryColorMap = {
+                    'Food': getComputedStyle(document.documentElement).getPropertyValue('--accent-green').trim(),
+                    'Medicines': getComputedStyle(document.documentElement).getPropertyValue('--accent-red').trim(),
+                    'Shopping': getComputedStyle(document.documentElement).getPropertyValue('--accent-orange').trim(),
+                    'Misc': getComputedStyle(document.documentElement).getPropertyValue('--accent-blue').trim(),
+                    'Transportation': getComputedStyle(document.documentElement).getPropertyValue('--accent-purple').trim(),
+                    'Utility Bills': '#FFEB3B', // Using a distinct color for Utility Bills
+                };
+
+                // Generate colors for the chart based on the order of categoryNames
+                const chartBackgroundColors = categoryNames.map(cat => categoryColorMap[cat] || 'gray'); // Default to gray if a category is not mapped
+
                 window.expenseChartInstance = new Chart(ctx.getContext('2d'), {
                     type: 'doughnut',
                     data: {
                         labels: categoryNames,
                         datasets: [{
                             data: categoryAmounts,
-                            backgroundColor: chartColors.slice(0, categoryNames.length),
+                            backgroundColor: chartBackgroundColors, // Use the mapped colors
                             borderColor: 'var(--card-bg)',
                             borderWidth: 4,
                         }]
@@ -317,7 +324,7 @@ document.addEventListener('DOMContentLoaded', () => {
             let initialMonth = today.getMonth() + 1;
 
             // Set initial active month button
-            const monthButtons = document.querySelectorAll('.months-nav .month-button');
+            const monthButtons = document.querySelectorAll('.month-button');
             monthButtons.forEach(button => {
                 button.classList.remove('active');
                 if (parseInt(button.dataset.month) === initialMonth) {
@@ -339,7 +346,7 @@ document.addEventListener('DOMContentLoaded', () => {
         categoryFilterDropdown.innerHTML = '<option value="">All Categories</option>';
         const uniqueCategories = new Set();
         allTransactionsData.forEach(entry => {
-            if (entry['What kind?']) uniqueCategories.add(entry['What kind'].trim());
+            if (entry['What kind?']) uniqueCategories.add(entry['What kind?'].trim());
             if (entry.Type) uniqueCategories.add(entry.Type.trim()); // Add "Gains" and "Expenses" as main types
         });
 
@@ -376,7 +383,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 return false;
             }
 
-            const entryDate = new Date(entry.Date); entryDate.setHours(0, 0, 0, 0);
+            const entryDate = new Date(entry.Date);
+            entryDate.setHours(0, 0, 0, 0);
 
             if (selectedMonth && !startDate && !endDate && entryDate.getMonth() + 1 !== selectedMonth) return false;
 
@@ -498,31 +506,18 @@ document.addEventListener('DOMContentLoaded', () => {
             const allData = parseCSV(csv);
 
             let overallTotalSavings = 0;
-            // Filter and calculate savings based on all transactions (gains add, expenses deduct)
+            // Filter and calculate savings based *only* on 'savings contribution' entries
             allSavingsDataGlobal = allData.filter(entry => {
                 const amount = parseFloat(entry.Amount);
-                const entryType = entry.Type ? entry.Type.toLowerCase() : '';
-                if (isNaN(amount)) return false;
-
-                if (entryType === 'gains') {
+                const isSavingsContribution = entry.Type && entry.Type.toLowerCase() === 'gains' &&
+                                             entry['What kind?'] && entry['What kind?'].toLowerCase() === 'savings contribution' &&
+                                             !isNaN(amount);
+                if (isSavingsContribution) {
                     overallTotalSavings += amount;
-                    // Only include actual savings contributions in the list if you want to differentiate
-                    // Otherwise, include all transactions for a running balance in the list
-                    return entry['What kind?'] && entry['What kind?'].toLowerCase() === 'savings contribution';
-                } else if (entryType === 'expenses') {
-                    overallTotalSavings -= amount;
-                    // Include all expenses in the list for a running balance
-                    return true;
                 }
-                return false;
+                return isSavingsContribution;
             });
             
-            // To display all transactions on the savings page (including expenses and gains),
-            // you'd need to re-think how allSavingsDataGlobal is populated.
-            // For now, it's filtered for 'savings contribution' in gains, and ALL expenses.
-            // If you want *all* transactions to be listed here, you'd simply assign allData to allSavingsDataGlobal
-            // and adjust the item rendering to show appropriate colors/icons for expenses too.
-
             if (totalSavingsAmountSpan) totalSavingsAmountSpan.textContent = formatCurrency(overallTotalSavings);
             
             currentSavingsPage = 1; // Reset page on initial load/update
@@ -588,35 +583,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 return timeA[2] - timeB[2];
             }).forEach(entry => {
                 const itemDiv = document.createElement('div'); itemDiv.classList.add('transaction-item');
-                const categoryIconDiv = document.createElement('div'); categoryIconDiv.classList.add('transaction-category-icon');
-                const { category: mappedCategory, icon: categoryIcon } = mapCategoryAndIcon(entry.Type, entry['What kind?']);
-
-                // Determine icon and class based on type and category
-                if (entry.Type.toLowerCase() === 'gains') {
-                    categoryIconDiv.classList.add('category-gain');
-                    categoryIconDiv.textContent = categoryIcon;
-                } else if (entry.Type.toLowerCase() === 'expenses') {
-                    switch (mappedCategory.toLowerCase()) {
-                        case 'food': categoryIconDiv.classList.add('category-food'); break;
-                        case 'medicines': categoryIconDiv.classList.add('category-medicines'); break;
-                        case 'shopping': categoryIconDiv.classList.add('category-shopping'); break;
-                        default: categoryIconDiv.classList.add('category-misc'); break;
-                    }
-                    categoryIconDiv.textContent = categoryIcon; // Use the expense icon
-                }
-                itemDiv.appendChild(categoryIconDiv);
-
+                // For savings entries, icon and color are fixed
+                const categoryIconDiv = document.createElement('div'); categoryIconDiv.classList.add('transaction-category-icon', 'category-gain');
+                categoryIconDiv.textContent = '💰'; itemDiv.appendChild(categoryIconDiv);
+                
                 const detailsDiv = document.createElement('div'); detailsDiv.classList.add('transaction-details');
                 const nameSpan = document.createElement('span'); nameSpan.classList.add('transaction-name');
-                nameSpan.textContent = entry.Description || entry['What kind?'] || 'N/A'; detailsDiv.appendChild(nameSpan);
+                nameSpan.textContent = entry.Description || 'Savings Contribution'; detailsDiv.appendChild(nameSpan);
                 const timeSpan = document.createElement('span'); timeSpan.classList.add('transaction-time');
                 timeSpan.textContent = entry.Time || ''; detailsDiv.appendChild(timeSpan);
                 itemDiv.appendChild(detailsDiv);
-                const amountSpan = document.createElement('span'); amountSpan.classList.add('transaction-amount');
-                amountSpan.textContent = formatCurrency(entry.Amount);
-                if (entry.Type.toLowerCase() === 'expenses') amountSpan.classList.add('expense');
-                else if (entry.Type.toLowerCase() === 'gains') amountSpan.classList.add('gain');
-                itemDiv.appendChild(amountSpan);
+                const amountSpan = document.createElement('span'); amountSpan.classList.add('transaction-amount', 'gain');
+                amountSpan.textContent = formatCurrency(entry.Amount); itemDiv.appendChild(amountSpan);
                 groupDiv.appendChild(itemDiv);
             });
             savingsListDiv.appendChild(groupDiv);
@@ -675,7 +653,6 @@ document.addEventListener('DOMContentLoaded', () => {
         updateDisplay();
     }
 
-    // ***** CALCULATOR FIX: Changed keys in performCalculation *****
     const performCalculation = {
         'divide': (first, second) => second === 0 ? 'Error' : first / second,
         'multiply': (first, second) => first * second,
@@ -684,27 +661,23 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     function handleOperator(nextOperator) {
-        if (currentInput === 'Error' && nextOperator) { // If error, pressing an operator might mean user wants to use last good firstOperand
-             if (firstOperand !== null) { // If there was a valid first operand before error
-                currentInput = String(firstOperand); // Restore it
-                waitingForSecondOperand = false; // Allow it to be part of new op
-             } else { // No valid firstOperand, so reset
+        if (currentInput === 'Error' && nextOperator) {
+             if (firstOperand !== null) {
+                currentInput = String(firstOperand);
+                waitingForSecondOperand = false;
+             } else {
                 resetCalculator();
                 updateDisplay();
-                // Operator cannot be processed if no first operand from error state.
                 return;
              }
         }
 
         const inputValue = parseFloat(currentInput);
-        if (isNaN(inputValue)) { // If current input is not a number (e.g. after an error not cleared by digit)
-            // Potentially an error state, or waiting for second operand.
-            // If operator is already set, and waitingForSecondOperand is true, allow changing operator
+        if (isNaN(inputValue)) {
             if (operator && waitingForSecondOperand) {
                  operator = nextOperator;
                  return;
             }
-            // Otherwise, don't proceed if input is NaN
             console.warn("Calculator: Input is NaN, cannot process operator.");
             return;
         }
@@ -719,12 +692,12 @@ document.addEventListener('DOMContentLoaded', () => {
             const result = performCalculation[operator](firstOperand, inputValue);
             if (result === 'Error' || isNaN(result)) {
                 currentInput = 'Error';
-                firstOperand = null; // Reset on error
+                firstOperand = null;
                 operator = null;
-                waitingForSecondOperand = true; // Expect a new start
+                waitingForSecondOperand = true;
             } else {
-                currentInput = String(parseFloat(result.toFixed(7))); // Limit precision
-                firstOperand = parseFloat(currentInput); // Store result as new firstOperand
+                currentInput = String(parseFloat(result.toFixed(7)));
+                firstOperand = parseFloat(currentInput);
             }
         }
         waitingForSecondOperand = true;
@@ -740,7 +713,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const action = target.dataset.action;
 
             if (target.classList.contains('operator')) { handleOperator(action); return; }
-            if (target.classList.contains('decimal')) { inputDecimal('.'); return; } // Use '.' directly
+            if (target.classList.contains('decimal')) { inputDecimal('.'); return; }
             if (action === 'clear') { resetCalculator(); updateDisplay(); return; }
             if (action === 'backspace') {
                 if (currentInput === 'Error') { resetCalculator(); }
@@ -748,17 +721,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 updateDisplay(); return;
             }
             if (action === 'calculate') {
-                if (operator === null || firstOperand === null) return; // Nothing to calculate if no operator or first operand
-                
-                // If waitingForSecondOperand is true, it means an operator was just pressed.
-                // Standard behavior: use currentInput (which might be the first operand again) as second.
-                // e.g., 5 + = should be 5 + 5.
-                // My currentInput is already set correctly before hitting equals if a second number was typed.
-                // If an operator was the last thing pressed, waitingForSecondOperand is true.
-                // inputValue will take currentInput.
+                if (operator === null || firstOperand === null) return;
                 
                 const inputValue = parseFloat(currentInput);
-                if (isNaN(inputValue) && currentInput !== 'Error') { // Handle if currentInput became NaN somehow
+                if (isNaN(inputValue) && currentInput !== 'Error') {
                     currentInput = 'Error';
                     firstOperand = null;
                     operator = null;
@@ -767,21 +733,19 @@ document.addEventListener('DOMContentLoaded', () => {
                     return;
                 }
 
-                if (currentInput === 'Error') return; // Don't calculate if display is Error
+                if (currentInput === 'Error') return;
 
                 let result = performCalculation[operator](firstOperand, inputValue);
                 if (result === 'Error' || isNaN(result)) {
                     currentInput = 'Error';
                 } else {
-                    currentInput = String(parseFloat(result.toFixed(7))); // Limit precision
+                    currentInput = String(parseFloat(result.toFixed(7)));
                 }
-                // After equals, some calculators chain (result becomes firstOperand, new operator can be hit)
-                // Others fully reset. Let's allow chaining for now by setting firstOperand.
-                firstOperand = parseFloat(currentInput); // If not error, result is new firstOperand
+                firstOperand = parseFloat(currentInput);
                 if (currentInput === 'Error') firstOperand = null;
 
-                operator = null; // Clear operator for next independent calculation unless chained
-                waitingForSecondOperand = true; // Ready for new number or new operator (if chaining)
+                operator = null;
+                waitingForSecondOperand = true;
                 updateDisplay();
                 return;
             }
@@ -837,7 +801,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const currentMonthBtn = document.querySelector(`.months-nav .month-button[data-month="${currentMonth}"]`);
                 if (currentMonthBtn) currentMonthBtn.classList.add('active');
                 renderTransactions(currentMonth);
-                if(filterOptionsContainer) filterOptionsContainer.style.display = 'none';
+                filterOptionsContainer.style.display = 'none';
             });
         }
         monthButtons.forEach(button => {
