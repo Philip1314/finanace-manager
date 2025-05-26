@@ -12,7 +12,8 @@
         <header class="header">
             <button class="menu-button" id="mainMenuButton">&#9776;</button> <h1>Savings</h1>
             <div class="header-right-icons">
-                <div class="profile-icon night-mode-toggle" id="nightModeToggle"></div> </div>
+                <div class="profile-icon night-mode-toggle" id="nightModeToggle"></div>
+            </div>
         </header>
 
         <div class="main-menu-sidebar" id="mainMenuSidebar">
@@ -29,62 +30,53 @@
             <section class="card savings-detail-card">
                 <h2>Your Savings Overview</h2>
                 <p>Total Savings: <span id="totalSavingsAmount">₱ 0.00</span></p>
-                <p>Goal: <span id="savingsGoal">₱ 0.00</span></p>
-                <div class="progress-bar-container">
-                    <div class="progress-bar" id="savingsProgressBar"></div>
-                </div>
-                <p>Progress: <span id="savingsProgressPct">0%</span></p>
-                <button class="button" id="editSavingsGoal">Edit Goal</button>
             </section>
 
-            <section class="card recent-savings-contributions">
-                <h2>Recent Contributions</h2>
-                <div id="recentContributionsList">
-                    <p style="text-align: center; color: var(--text-light);">No recent contributions.</p>
-                </div>
+            <section class="recent-contributions-section">
+                <h2>Savings Entries (Gains)</h2>
+                <div class="transactions-list" id="savingsEntriesList">
+                    </div>
+                <div class="pagination-controls" id="savingsPagination">
+                    </div>
             </section>
-
-            </main>
-    </div>
-
-    <div class="calculator-overlay" id="calculatorOverlay">
-        <div class="calculator-card" id="calculatorCard">
-            <div class="calculator-header">
-                <h3>Calculator</h3>
-                <button class="close-calculator-button" id="closeCalculatorButton">&times;</button>
-            </div>
-            <div class="calculator-body">
-                <input type="text" class="calculator-display" id="calculatorDisplay" value="0" readonly>
-                <div class="calculator-buttons">
-                    <button class="calc-btn clear" data-action="clear">C</button>
-                    <button class="calc-btn backspace" data-action="backspace">←</button>
-                    <button class="calc-btn operator" data-action="divide">/</button>
-                    <button class="calc-btn operator" data-action="multiply">*</button>
-
-                    <button class="calc-btn digit">7</button>
-                    <button class="calc-btn digit">8</button>
-                    <button class="calc-btn digit">9</button>
-                    <button class="calc-btn operator" data-action="subtract">-</button>
-
-                    <button class="calc-btn digit">4</button>
-                    <button class="calc-btn digit">5</button>
-                    <button class="calc-btn digit">6</button>
-                    <button class="calc-btn operator" data-action="add">+</button>
-
-                    <button class="calc-btn digit">1</button>
-                    <button class="calc-btn digit">2</button>
-                    <button class="calc-btn digit">3</button>
-                    <button class="calc-btn equals" data-action="calculate">=</button>
-
-                    <button class="calc-btn digit zero">0</button>
-                    <button class="calc-btn decimal" data-action="decimal">.</button>
-                </div>
-            </div>
-        </div>
+        </main>
     </div>
 
     <button class="fab-button" id="addTransactionFab">+</button>
     <button class="fab-button fab-calculator" id="openCalculatorFab">CALC</button>
+
+    <div class="calculator-overlay" id="calculatorOverlay">
+        <div class="calculator">
+            <div class="calculator-header">
+                <button class="close-calculator-button" id="closeCalculatorButton">&times;</button>
+            </div>
+            <input type="text" class="calculator-display" id="calculatorDisplay" value="0" disabled>
+            <div class="calculator-buttons">
+                <button class="calc-btn clear" data-action="clear">AC</button>
+                <button class="calc-btn backspace" data-action="backspace">←</button>
+                <button class="calc-btn operator" data-action="divide">/</button>
+                <button class="calc-btn operator" data-action="multiply">*</button>
+
+                <button class="calc-btn digit">7</button>
+                <button class="calc-btn digit">8</button>
+                <button class="calc-btn digit">9</button>
+                <button class="calc-btn operator" data-action="subtract">-</button>
+
+                <button class="calc-btn digit">4</button>
+                <button class="calc-btn digit">5</button>
+                <button class="calc-btn digit">6</button>
+                <button class="calc-btn operator" data-action="add">+</button>
+
+                <button class="calc-btn digit">1</button>
+                <button class="calc-btn digit">2</button>
+                <button class="calc-btn digit">3</button>
+                <button class="calc-btn equals" data-action="calculate">=</button>
+
+                <button class="calc-btn digit zero">0</button>
+                <button class="calc-btn decimal" data-action="decimal">.</button>
+            </div>
+        </div>
+    </div>
 
     <script src="script.js"></script>
 </body>
