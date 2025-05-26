@@ -113,12 +113,38 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- Dashboard Specific Logic (index.html) ---
-    async function updateDashboard(filterCategory = 'All') {
+    async function updateDashboard(filterMonth = 'All', filterYear = 'All') {
         if (!document.getElementById('dashboard-page')) return;
         try {
             const response = await fetch(CSV_URL);
             const csv = await response.text();
             const data = parseCSV(csv);
+            
+            // Populate years for the filter dropdown
+            const years = new Set();
+            data.forEach(entry => {
+                const entryDate = new Date(entry.Date);
+                if (!isNaN(entryDate)) {
+                    years.add(entryDate.getFullYear());
+                }
+            });
+            const sortedYears = Array.from(years).sort((a, b) => b - a); // Sort descending
+            const chartYearFilter = document.getElementById('chartYearFilter');
+            if (chartYearFilter) {
+                // Clear existing options except "All Years"
+                chartYearFilter.innerHTML = '<option value="All">All Years</option>';
+                sortedYears.forEach(year => {
+                    const option = document.createElement('option');
+                    option.value = year;
+                    option.textContent = year;
+                    chartYearFilter.appendChild(option);
+                });
+                // Set the current selected year if it's in the list
+                if (filterYear !== 'All') {
+                    chartYearFilter.value = filterYear;
+                }
+            }
+
 
             let totalExpensesAmount = 0;
             let totalGainsAmount = 0;
@@ -129,25 +155,34 @@ document.addEventListener('DOMContentLoaded', () => {
                 const amount = parseFloat(entry.Amount);
                 const entryType = entry.Type ? entry.Type.toLowerCase() : '';
                 const entryWhatKind = entry['What kind?'] ? entry['What kind?'].toLowerCase() : '';
-                const mapped = mapCategoryAndIcon(entry, entry['What kind?']); // Use mapCategoryAndIcon to get consistent category names
+                const mapped = mapCategoryAndIcon(entry, entry['What kind?']);
 
-                if (isNaN(amount) || !entryType) {
+                const entryDate = new Date(entry.Date);
+                if (isNaN(amount) || !entryType || isNaN(entryDate)) {
                     console.warn('Dashboard - Skipping malformed entry:', entry);
                     return;
                 }
 
+                const entryMonth = entryDate.getMonth() + 1; // 1-indexed month
+                const entryYear = entryDate.getFullYear();
+
+                const matchesMonth = (filterMonth === 'All' || entryMonth === parseInt(filterMonth));
+                const matchesYear = (filterYear === 'All' || entryYear === parseInt(filterYear));
+
+                if (!matchesMonth || !matchesYear) {
+                    return; // Skip if it doesn't match the selected filters
+                }
+
                 if (entryType === 'expenses') {
-                    // Only include in totalExpensesAmount and category breakdown if it matches the filter or filter is 'All'
-                    if (filterCategory === 'All' || mapped.category === filterCategory) {
-                        totalExpensesAmount += amount;
-                        // Accumulate for all categories for display in the chart data
-                        if (mapped.category === 'Food') expenseCategoriesForChart.Food += amount;
-                        else if (mapped.category === 'Medicines') expenseCategoriesForChart.Medicines += amount;
-                        else if (mapped.category === 'Shopping') expenseCategoriesForChart.Shopping += amount;
-                        else if (mapped.category === 'Utility Bills') expenseCategoriesForChart['Utility Bills'] += amount;
-                        else expenseCategoriesForChart.Misc += amount; // Fallback for other expenses
-                    }
-                    // Deduct from savings if it's an expense marked as 'savings' regardless of filter
+                    totalExpensesAmount += amount;
+                    // Accumulate for all categories for display in the chart data
+                    if (mapped.category === 'Food') expenseCategoriesForChart.Food += amount;
+                    else if (mapped.category === 'Medicines') expenseCategoriesForChart.Medicines += amount;
+                    else if (mapped.category === 'Shopping') expenseCategoriesForChart.Shopping += amount;
+                    else if (mapped.category === 'Utility Bills') expenseCategoriesForChart['Utility Bills'] += amount;
+                    else expenseCategoriesForChart.Misc += amount; // Fallback for other expenses
+                    
+                    // Deduct from savings if it's an expense marked as 'savings'
                     if (entryWhatKind === 'savings') {
                         totalSavingsAmount -= amount;
                     }
@@ -190,12 +225,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 progressCircle.style.stroke = progressColor;
             }
 
-            // Filter category names based on the updated expenseCategoriesForChart
+            // Filter out categories with 0 amounts for chart and legend display
             const categoryNames = Object.keys(expenseCategoriesForChart).filter(cat => expenseCategoriesForChart[cat] > 0);
             const categoryAmounts = categoryNames.map(cat => expenseCategoriesForChart[cat]);
             const totalCategoryExpenseForChart = categoryAmounts.reduce((sum, amount) => sum + amount, 0);
 
-            // Dynamically update legend percentages
+            // Dynamically update legend percentages based on *filtered* total
             document.getElementById('foodPct').textContent = `${totalCategoryExpenseForChart > 0 ? Math.round((expenseCategoriesForChart.Food / totalCategoryExpenseForChart) * 100) : 0}%`;
             document.getElementById('medicinesPct').textContent = `${totalCategoryExpenseForChart > 0 ? Math.round((expenseCategoriesForChart.Medicines / totalCategoryExpenseForChart) * 100) : 0}%`;
             document.getElementById('shoppingPct').textContent = `${totalCategoryExpenseForChart > 0 ? Math.round((expenseCategoriesForChart.Shopping / totalCategoryExpenseForChart) * 100) : 0}%`;
@@ -261,23 +296,35 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // --- Filter for Donut Chart (Dashboard Page) ---
+    // --- Filter for Donut Chart (Dashboard Page) - Month and Year ---
     const filterChartButton = document.getElementById('filterChartButton');
     const filterOptionsContainer = document.getElementById('filterOptionsContainer');
-    const chartCategoryFilter = document.getElementById('chartCategoryFilter');
+    const chartMonthFilter = document.getElementById('chartMonthFilter');
+    const chartYearFilter = document.getElementById('chartYearFilter');
 
-    if (filterChartButton && filterOptionsContainer && chartCategoryFilter) {
+    if (filterChartButton && filterOptionsContainer && chartMonthFilter && chartYearFilter) {
         filterChartButton.addEventListener('click', () => {
             filterOptionsContainer.classList.toggle('open');
             filterChartButton.classList.toggle('active'); // Add/remove active class for arrow rotation
         });
 
-        chartCategoryFilter.addEventListener('change', () => {
-            const selectedCategory = chartCategoryFilter.value;
-            updateDashboard(selectedCategory);
+        // Add change listeners for month and year filters
+        chartMonthFilter.addEventListener('change', () => {
+            const selectedMonth = chartMonthFilter.value;
+            const selectedYear = chartYearFilter.value; // Get current year selection
+            updateDashboard(selectedMonth, selectedYear);
             filterOptionsContainer.classList.remove('open'); // Close dropdown after selection
             filterChartButton.classList.remove('active'); // Reset arrow
         });
+
+        chartYearFilter.addEventListener('change', () => {
+            const selectedMonth = chartMonthFilter.value; // Get current month selection
+            const selectedYear = chartYearFilter.value;
+            updateDashboard(selectedMonth, selectedYear);
+            filterOptionsContainer.classList.remove('open'); // Close dropdown after selection
+            filterChartButton.classList.remove('active'); // Reset arrow
+        });
+
 
         // Close dropdown if clicked outside
         document.addEventListener('click', (event) => {
@@ -815,7 +862,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Page specific initializations ---
     if (document.getElementById('dashboard-page')) {
-        updateDashboard();
+        updateDashboard(); // Call with default 'All' for month and year
     } else if (document.getElementById('transactions-page')) {
         const filterButton = document.getElementById('filterButton');
         const filterOptionsContainer = document.getElementById('filterOptionsContainer');
@@ -859,7 +906,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const currentMonthBtn = document.querySelector(`.months-nav .month-button[data-month=\"${currentMonth}\"]`);
                 if (currentMonthBtn) currentMonthBtn.classList.add('active');
                 renderTransactions(currentMonth);
-                filterOptionsContainer.style.display = 'none';
+                if(filterOptionsContainer) filterOptionsContainer.classList.remove('open'); // Ensure filter options container closes
             });
         }
 
