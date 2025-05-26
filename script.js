@@ -1,6 +1,7 @@
 document.addEventListener('DOMContentLoaded', () => {
     const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQgMFbI8pivLbRpc2nL2Gyoxw47PmXEVxvUDrjr-t86gj4-J3QM8uV7m8iJN9wxlYo3IY5FQqqUICei/pub?output=csv';
     const GOOGLE_FORM_URL = 'https://docs.google.com/forms/d/e/1FAIpQLSdrDJoOeo264aOn4g2UEe-K-FHpbssBAVmEtOWoW46Q1cwjgg/viewform?usp=header';
+    const SAVINGS_GOAL_KEY = 'savingsGoal'; // Key for localStorage
 
     function parseCSV(csv) {
         const lines = csv.split('\n').filter(line => line.trim() !== '');
@@ -44,6 +45,7 @@ document.addEventListener('DOMContentLoaded', () => {
             switch (lowerCaseWhatKind) {
                 case 'salary': icon = '💸'; break;
                 case 'allowance': icon = '🎁'; break;
+                case 'savings contribution': icon = '💰'; break; // Specific icon for savings contributions
                 default: icon = '💰'; break;
             }
         } else if (lowerCaseType === 'expenses') {
@@ -60,6 +62,58 @@ document.addEventListener('DOMContentLoaded', () => {
         return { category, icon };
     }
 
+    // --- Dark Mode Toggle ---
+    const nightModeToggle = document.getElementById('nightModeToggle');
+    const body = document.body;
+
+    // Check for saved theme preference
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme) {
+        body.classList.add(savedTheme);
+    } else {
+        // Default to light mode if no preference saved
+        body.classList.add('light-mode');
+    }
+
+    if (nightModeToggle) {
+        nightModeToggle.addEventListener('click', () => {
+            if (body.classList.contains('light-mode')) {
+                body.classList.remove('light-mode');
+                body.classList.add('dark-mode');
+                localStorage.setItem('theme', 'dark-mode');
+            } else {
+                body.classList.remove('dark-mode');
+                body.classList.add('light-mode');
+                localStorage.setItem('theme', 'light-mode');
+            }
+        });
+    }
+
+    // --- Hamburger Menu Logic ---
+    const mainMenuButton = document.getElementById('mainMenuButton');
+    const mainMenuSidebar = document.getElementById('mainMenuSidebar');
+    const closeSidebarButton = document.getElementById('closeSidebarButton');
+
+    if (mainMenuButton && mainMenuSidebar && closeSidebarButton) {
+        mainMenuButton.addEventListener('click', () => {
+            mainMenuSidebar.classList.add('open');
+        });
+
+        closeSidebarButton.addEventListener('click', () => {
+            mainMenuSidebar.classList.remove('open');
+        });
+
+        // Close sidebar if clicked outside of it
+        document.addEventListener('click', (event) => {
+            if (mainMenuSidebar.classList.contains('open') &&
+                !mainMenuSidebar.contains(event.target) &&
+                !mainMenuButton.contains(event.target)) {
+                mainMenuSidebar.classList.remove('open');
+            }
+        });
+    }
+
+
     // --- Dashboard Specific Logic (index.html) ---
     async function updateDashboard() {
         if (!document.getElementById('dashboard-page')) return;
@@ -71,6 +125,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             let totalExpensesAmount = 0;
             let totalGainsAmount = 0;
+            let totalSavingsAmount = 0; // New variable for savings
 
             const expenseCategoriesForChart = { Food: 0, Medicines: 0, Shopping: 0, Misc: 0 };
 
@@ -97,6 +152,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 } else if (entryType === 'gains') {
                     totalGainsAmount += amount;
+                    if (entryWhatKind === 'savings contribution') {
+                        totalSavingsAmount += amount;
+                    }
                 }
             });
 
@@ -104,7 +162,7 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('netExpenseValue').textContent = formatCurrency(netExpenseForDisplay);
 
             const remainingBalance = totalGainsAmount - totalExpensesAmount;
-            const totalIncomeOrBudget = totalGainsAmount;
+            const totalIncomeOrBudget = totalGainsAmount; // Assuming totalGainsAmount acts as budget for now
 
             document.getElementById('remainingBalanceAmount').textContent = `${formatCurrency(remainingBalance)} of ${formatCurrency(totalIncomeOrBudget)}`;
 
@@ -125,10 +183,12 @@ document.addEventListener('DOMContentLoaded', () => {
             } else if (displayPercentage > 0) {
                 progressOffset = circumference - (displayPercentage / 100) * circumference;
                 if (displayPercentage < 25) {
-                    progressColor = 'var(--accent-orange)';
+                    progressColor = 'var(--accent-red)'; // Change to red if remaining is low
+                } else if (displayPercentage < 50) {
+                    progressColor = 'var(--accent-orange)'; // Orange for mid-range
                 }
-            } else {
-                progressOffset = circumference;
+            } else { // remainingBalance <= 0
+                progressOffset = circumference; // Circle fully red/empty visually
                 progressColor = 'var(--accent-red)';
             }
 
@@ -197,11 +257,35 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
             }
 
+            // Update Savings Card
+            const savingsAmountSpan = document.getElementById('savingsAmount');
+            if (savingsAmountSpan) {
+                savingsAmountSpan.dataset.actualAmount = totalSavingsAmount; // Store actual for masking
+                savingsAmountSpan.textContent = formatCurrency(totalSavingsAmount);
+            }
+
         } catch (error) {
             console.error('Error fetching or processing CSV for dashboard:', error);
             if (document.getElementById('netExpenseValue')) document.getElementById('netExpenseValue').textContent = '₱ Error';
             if (document.getElementById('remainingBalanceAmount')) document.getElementById('remainingBalanceAmount').textContent = '₱ Error';
         }
+    }
+
+    // Mask Savings Button
+    const maskSavingsButton = document.getElementById('maskSavingsButton');
+    if (maskSavingsButton) {
+        maskSavingsButton.addEventListener('click', () => {
+            const savingsAmountSpan = document.getElementById('savingsAmount');
+            if (savingsAmountSpan) {
+                if (savingsAmountSpan.textContent.includes('●')) {
+                    savingsAmountSpan.textContent = formatCurrency(savingsAmountSpan.dataset.actualAmount || 0);
+                    maskSavingsButton.textContent = 'Mask';
+                } else {
+                    savingsAmountSpan.textContent = '₱ ●●.●●●.●●';
+                    maskSavingsButton.textContent = 'Show';
+                }
+            }
+        });
     }
 
     // --- Transactions Page Specific Logic (transactions.html) ---
@@ -240,35 +324,36 @@ document.addEventListener('DOMContentLoaded', () => {
             if (entry['What kind?']) {
                 uniqueCategories.add(entry['What kind?'].trim());
             }
-            if (entry.Type && entry.Type.toLowerCase() === 'gains' && entry['What kind?'].trim() === 'Salary') {
-                uniqueCategories.add('Salary'); // Explicitly add Salary for gains
+            if (entry.Type && entry.Type.toLowerCase() === 'gains') {
+                uniqueCategories.add('Gains');
             }
-            if (entry.Type && entry.Type.toLowerCase() === 'gains' && entry['What kind?'].trim() === 'Allowance') {
-                uniqueCategories.add('Allowance'); // Explicitly add Allowance for gains
+            if (entry.Type && entry.Type.toLowerCase() === 'expenses') {
+                uniqueCategories.add('Expenses');
             }
         });
 
-        // Sort categories alphabetically, add "Gains" to the top
         const sortedCategories = Array.from(uniqueCategories).sort();
-        const finalCategories = ['Gains']; // Start with Gains
-        sortedCategories.forEach(cat => {
-            // Avoid adding "Salary" or "Allowance" separately if "Gains" handles them broadly
-            // Or add specific ones like 'Food', 'Medicines', 'Shopping', etc.
-            if (!['salary', 'allowance'].includes(cat.toLowerCase())) {
-                finalCategories.push(cat);
-            }
-        });
-
-        // Add a specific 'Expenses' category if not already implicitly covered by 'Food', 'Medicines', etc.
-        // This makes filtering more robust if 'Type' is needed explicitly.
-        if (!finalCategories.includes('Expenses')) {
-             finalCategories.splice(1, 0, 'Expenses'); // Add 'Expenses' after 'Gains'
+        // Add 'Gains' and 'Expenses' specifically at the top if they exist
+        const prioritizedCategories = [];
+        if (sortedCategories.includes('Gains')) {
+            prioritizedCategories.push('Gains');
+            sortedCategories.splice(sortedCategories.indexOf('Gains'), 1);
+        }
+        if (sortedCategories.includes('Expenses')) {
+            prioritizedCategories.push('Expenses');
+            sortedCategories.splice(sortedCategories.indexOf('Expenses'), 1);
         }
 
+        // Add the rest, filtering out "Salary", "Allowance", "Savings Contribution" if they are sub-categories of "Gains"
+        sortedCategories.forEach(cat => {
+            const lowerCaseCat = cat.toLowerCase();
+            if (!['salary', 'allowance', 'savings contribution'].includes(lowerCaseCat)) {
+                prioritizedCategories.push(cat);
+            }
+        });
 
-        // Re-populate options, keeping 'All Categories' at the top
-        finalCategories.forEach(category => {
-            if (category) { // Ensure no empty categories are added
+        prioritizedCategories.forEach(category => {
+            if (category) {
                 const option = document.createElement('option');
                 option.value = category;
                 option.textContent = category;
@@ -276,7 +361,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
-
 
     function renderTransactions(selectedMonth, selectedCategory = '', startDate = null, endDate = null) {
         const transactionsListDiv = document.getElementById('transactionsList');
@@ -286,7 +370,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const amount = parseFloat(entry.Amount);
             const date = new Date(entry.Date);
             const entryType = entry.Type ? entry.Type.toLowerCase() : '';
-            const entryWhatKind = entry['What kind'] ? entry['What kind'].toLowerCase() : ''; // Use 'What kind' here
+            const entryWhatKind = entry['What kind?'] ? entry['What kind?'].toLowerCase() : ''; // Use 'What kind?' from CSV headers
 
             if (isNaN(amount) || isNaN(date) || !entryType) {
                 console.warn('Skipping malformed entry:', entry);
@@ -304,19 +388,17 @@ document.addEventListener('DOMContentLoaded', () => {
             // Category filtering
             if (selectedCategory) {
                 const lowerCaseSelectedCategory = selectedCategory.toLowerCase();
-                const actualCategory = entry['What kind'] ? entry['What kind'].toLowerCase() : '';
+                const actualCategoryInEntry = entry['What kind?'] ? entry['What kind?'].toLowerCase() : ''; // Use 'What kind?'
                 const entryCategoryType = entry.Type ? entry.Type.toLowerCase() : ''; // 'gains' or 'expenses'
 
                 if (lowerCaseSelectedCategory === 'gains') {
                     if (entryCategoryType !== 'gains') return false;
                 } else if (lowerCaseSelectedCategory === 'expenses') {
                     if (entryCategoryType !== 'expenses') return false;
-                } else if (actualCategory !== lowerCaseSelectedCategory) {
-                     // Specific category match, e.g., 'food', 'medicines'
+                } else if (actualCategoryInEntry !== lowerCaseSelectedCategory) {
                     return false;
                 }
             }
-
 
             // Date range filtering
             if (startDate && endDate) {
@@ -451,6 +533,101 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // --- Savings Page Logic (savings.html) ---
+    async function updateSavingsPage() {
+        if (!document.getElementById('savings-page')) return;
+
+        try {
+            const response = await fetch(CSV_URL);
+            const csv = await response.text();
+            const data = parseCSV(csv);
+
+            let totalSavings = 0;
+            const recentContributions = [];
+
+            data.forEach(entry => {
+                const amount = parseFloat(entry.Amount);
+                if (entry.Type && entry.Type.toLowerCase() === 'gains' && entry['What kind?'] && entry['What kind?'].toLowerCase() === 'savings contribution' && !isNaN(amount)) {
+                    totalSavings += amount;
+                    recentContributions.push({
+                        date: entry.Date,
+                        description: entry.Description || 'Savings Contribution',
+                        amount: amount
+                    });
+                }
+            });
+
+            // Sort recent contributions by date, newest first
+            recentContributions.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+            const savingsGoal = parseFloat(localStorage.getItem(SAVINGS_GOAL_KEY)) || 0;
+
+            document.getElementById('totalSavingsAmount').textContent = formatCurrency(totalSavings);
+            document.getElementById('savingsGoal').textContent = formatCurrency(savingsGoal);
+
+            const savingsProgressBar = document.getElementById('savingsProgressBar');
+            const savingsProgressPct = document.getElementById('savingsProgressPct');
+
+            let percentage = 0;
+            if (savingsGoal > 0) {
+                percentage = (totalSavings / savingsGoal) * 100;
+            }
+            percentage = Math.min(100, Math.max(0, percentage)); // Cap between 0 and 100
+
+            if (savingsProgressBar) {
+                savingsProgressBar.style.width = `${percentage}%`;
+            }
+            if (savingsProgressPct) {
+                savingsProgressPct.textContent = `${Math.round(percentage)}%`;
+            }
+
+            const recentContributionsList = document.getElementById('recentContributionsList');
+            if (recentContributionsList) {
+                recentContributionsList.innerHTML = ''; // Clear previous entries
+                if (recentContributions.length > 0) {
+                    recentContributions.slice(0, 5).forEach(contribution => { // Show top 5 recent
+                        const itemDiv = document.createElement('div');
+                        itemDiv.classList.add('contribution-item');
+                        itemDiv.innerHTML = `
+                            <div class="contribution-details">
+                                <span class="date">${new Date(contribution.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+                                <span class="description">${contribution.description}</span>
+                            </div>
+                            <span class="contribution-amount">${formatCurrency(contribution.amount)}</span>
+                        `;
+                        recentContributionsList.appendChild(itemDiv);
+                    });
+                } else {
+                    recentContributionsList.innerHTML = '<p style="text-align: center; color: var(--text-light);">No recent contributions.</p>';
+                }
+            }
+
+            // Edit Goal button functionality
+            const editSavingsGoalButton = document.getElementById('editSavingsGoal');
+            if (editSavingsGoalButton) {
+                editSavingsGoalButton.addEventListener('click', () => {
+                    let newGoal = prompt('Enter your new savings goal (e.g., 50000):', savingsGoal);
+                    if (newGoal !== null) {
+                        newGoal = parseFloat(newGoal);
+                        if (!isNaN(newGoal) && newGoal >= 0) {
+                            localStorage.setItem(SAVINGS_GOAL_KEY, newGoal);
+                            updateSavingsPage(); // Re-render page with new goal
+                        } else {
+                            alert('Please enter a valid positive number for your savings goal.');
+                        }
+                    }
+                });
+            }
+
+        } catch (error) {
+            console.error('Error fetching or processing CSV for savings page:', error);
+            if (document.getElementById('totalSavingsAmount')) document.getElementById('totalSavingsAmount').textContent = '₱ Error';
+            if (document.getElementById('savingsGoal')) document.getElementById('savingsGoal').textContent = '₱ Error';
+            if (document.getElementById('recentContributionsList')) document.getElementById('recentContributionsList').innerHTML = '<p style="text-align: center; color: var(--accent-red); padding: 2rem;">Error loading savings data.</p>';
+        }
+    }
+
+
     // --- Calculator Logic ---
     const calculatorOverlay = document.getElementById('calculatorOverlay');
     const calculatorDisplay = document.getElementById('calculatorDisplay');
@@ -501,7 +678,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const inputValue = parseFloat(currentInput);
 
         if (operator && waitingForSecondOperand) {
-            operator = nextOperator;
+            operator = nextOperator; // Allow changing operator before second operand is entered
             return;
         }
 
@@ -509,7 +686,7 @@ document.addEventListener('DOMContentLoaded', () => {
             firstOperand = inputValue;
         } else if (operator) {
             const result = performCalculation[operator](firstOperand, inputValue);
-            currentInput = String(result);
+            currentInput = String(parseFloat(result.toFixed(8))); // Limit decimals for display
             firstOperand = result;
         }
 
@@ -519,11 +696,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     const performCalculation = {
-        '/': (firstOperand, secondOperand) => firstOperand / secondOperand,
+        '/': (firstOperand, secondOperand) => secondOperand === 0 ? 'Error' : firstOperand / secondOperand,
         '*': (firstOperand, secondOperand) => firstOperand * secondOperand,
         '+': (firstOperand, secondOperand) => firstOperand + secondOperand,
         '-': (firstOperand, secondOperand) => firstOperand - secondOperand,
-        '=': (firstOperand, secondOperand) => secondOperand // For equals, just display the second operand after operation
     };
 
     if (calculatorButtons) {
@@ -550,18 +726,27 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             if (target.classList.contains('backspace')) {
-                currentInput = calculatorDisplay.value.slice(0, -1) || '0';
+                currentInput = currentInput.slice(0, -1);
+                if (currentInput === '') { // If nothing left, set to '0'
+                    currentInput = '0';
+                }
                 updateDisplay();
                 return;
             }
 
             if (target.classList.contains('equals')) {
                 if (firstOperand === null || operator === null || waitingForSecondOperand) {
-                    return;
+                    return; // Do nothing if nothing to compute
                 }
                 const inputValue = parseFloat(currentInput);
-                const result = performCalculation[operator](firstOperand, inputValue);
-                currentInput = String(result);
+                let result = performCalculation[operator](firstOperand, inputValue);
+
+                if (result === 'Error') {
+                    currentInput = 'Error';
+                } else {
+                    currentInput = String(parseFloat(result.toFixed(8))); // Limit decimals for display
+                }
+
                 firstOperand = null; // Clear for next calculation
                 operator = null; // Clear operator
                 waitingForSecondOperand = true; // Ready for new input or chain operation
@@ -606,6 +791,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // Initialize page-specific functions
     if (document.getElementById('dashboard-page')) {
         updateDashboard();
     } else if (document.getElementById('transactions-page')) {
@@ -635,12 +821,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 const startDate = startDateInput.value; // Will be empty string if not set
                 const endDate = endDateInput.value; // Will be empty string if not set
 
-                // Get the currently active month button's month value
                 const activeMonthButton = document.querySelector('.month-button.active');
-                currentMonth = activeMonthButton ? parseInt(activeMonthButton.dataset.month) : null; // Use null if no specific month is active (e.g., custom date filter takes precedence)
+                currentMonth = activeMonthButton ? parseInt(activeMonthButton.dataset.month) : null;
 
-                // If custom dates are selected, override month filter
-                const finalMonth = (startDate || endDate) ? null : currentMonth; // If dates are present, don't filter by month
+                const finalMonth = (startDate || endDate) ? null : currentMonth;
 
                 renderTransactions(finalMonth, selectedCategory, startDate, endDate);
                 filterOptionsContainer.style.display = 'none'; // Hide filters after applying
@@ -654,7 +838,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 startDateInput.value = ''; // Clear date inputs
                 endDateInput.value = ''; // Clear date inputs
 
-                // Re-activate current month button and re-render
                 const today = new Date();
                 currentMonth = today.getMonth() + 1;
                 const monthButtons = document.querySelectorAll('.month-button');
@@ -677,14 +860,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        // Set date in profile icon on transactions page
-        const profileDateDisplay = document.getElementById('profileDateDisplay');
-        if (profileDateDisplay) {
-            const monthName = today.toLocaleDateString('en-US', { month: 'short' });
-            const dayOfMonth = today.getDate();
-            profileDateDisplay.innerHTML = `<span>${monthName}</span><span>${dayOfMonth}</span>`;
-        }
-
         // Add event listeners for month buttons
         monthButtons.forEach(button => {
             button.addEventListener('click', function() {
@@ -702,5 +877,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Initial data fetch and render for transactions page
         fetchAndProcessTransactions();
+    } else if (document.getElementById('savings-page')) {
+        updateSavingsPage();
     }
 });
