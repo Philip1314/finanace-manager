@@ -29,6 +29,34 @@
 
         <main class="main-content">
             <section class="card summary-card">
+                <div class="chart-header">
+                    <h2>Expense Categories</h2>
+                    <div class="filter-dropdown-container">
+                        <button class="filter-button" id="dashboardFilterButton">Filter</button>
+                        <div class="filter-options" id="dashboardFilterOptions">
+                            <select id="monthFilter" class="filter-select">
+                                <option value="">All Months</option>
+                                <option value="1">January</option>
+                                <option value="2">February</option>
+                                <option value="3">March</option>
+                                <option value="4">April</option>
+                                <option value="5">May</option>
+                                <option value="6">June</option>
+                                <option value="7">July</option>
+                                <option value="8">August</option>
+                                <option value="9">September</option>
+                                <option value="10">October</option>
+                                <option value="11">November</option>
+                                <option value="12">December</option>
+                            </select>
+                            <select id="yearFilter" class="filter-select">
+                                <option value="">All Years</option>
+                                </select>
+                            <button id="applyDashboardFilterBtn" class="filter-apply-btn">Apply</button>
+                            <button id="clearDashboardFilterBtn" class="filter-clear-btn">Clear</button>
+                        </div>
+                    </div>
+                </div>
                 <div class="chart-container">
                     <canvas id="expenseChart"></canvas>
                     <div class="net-expense-overlay">
@@ -38,72 +66,82 @@
                 </div>
                 <div class="legend">
                     <div class="legend-item">
-                        <span class="dot food"></span>
-                        Food<span id="foodPct">0%</span>
+                        <span class="dot food"></span> Food <span id="foodPct">0%</span>
                     </div>
                     <div class="legend-item">
-                        <span class="dot medicines"></span>
-                        Medicines<span id="medicinesPct">0%</span>
+                        <span class="dot medicines"></span> Medicines <span id="medicinesPct">0%</span>
                     </div>
                     <div class="legend-item">
-                        <span class="dot shopping"></span>
-                        Shopping<span id="shoppingPct">0%</span>
+                        <span class="dot shopping"></span> Shopping <span id="shoppingPct">0%</span>
                     </div>
                     <div class="legend-item">
-                        <span class="dot misc"></span>
-                        Misc<span id="miscPct">0%</span>
+                        <span class="dot misc"></span> Misc <span id="miscPct">0%</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="dot utility-bills"></span> Utility Bills <span id="utilityBillsPct">0%</span>
                     </div>
                 </div>
             </section>
 
             <section class="card limit-card">
                 <div class="limit-progress-wrapper">
-                    <svg class="progress-circle" viewBox="0 0 80 80">
-                        <circle class="progress-ring-track" r="34" cx="40" cy="40"></circle>
-                        <circle class="progress-ring-progress" r="34" cx="40" cy="40"></circle>
+                    <svg class="progress-circle" width="80" height="80">
+                        <circle class="progress-ring-track" stroke-width="6" fill="transparent" r="34" cx="40" cy="40"/>
+                        <circle class="progress-ring-progress" stroke-width="6" fill="transparent" r="34" cx="40" cy="40"/>
                     </svg>
                     <span class="progress-text" id="remainingBalancePct">0%</span>
                 </div>
                 <div class="limit-details">
-                    <span class="limit-title">Remaining Balance</span>
-                    <span class="limit-amount" id="remainingBalanceAmount">₱ 0.00 of ₱ 0.00</span>
+                    <div class="limit-title">Remaining Balance</div>
+                    <div class="limit-amount" id="remainingBalanceAmount">₱ 0.00 of ₱ 0.00</div>
                 </div>
                 <a href="transactions.html" class="arrow-link">&gt;</a>
             </section>
 
             <section class="card savings-card">
-                <div class="promo-text">
-                    <h2>Current Savings!</h2>
+                <div class="savings-info">
+                    <span class="savings-title">Total Savings:</span>
                     <span class="savings-amount" id="savingsAmount">₱ 0.00</span>
-                    <button class="mask-button" id="maskSavingsButton">Mask</button>
-                    <a href="savings.html" class="view-savings-button">View Savings</a>
+                    <button class="mask-savings-button" id="maskSavingsButton">👁️</button>
                 </div>
-                <img src="https://cdn-icons-png.flaticon.com/512/1453/1453653.png" alt="Savings Illustration" class="card-illustration">
+                <p class="savings-promo-text">Keep track of your financial goals and watch your savings grow!</p>
+                <a href="savings.html" class="button button-primary">View Savings Details</a>
             </section>
 
-            <section class="card transactions-promo-card">
-                <div class="promo-text">
-                    <h2>Transactions on your hands!</h2>
-                    <a href="transactions.html" class="button">View All</a>
+            <section class="card add-transaction-card">
+                <h2>Quick Add Transaction</h2>
+                <div class="input-group">
+                    <label for="transactionType">Type</label>
+                    <select id="transactionType" class="text-input">
+                        <option value="Expenses">Expense</option>
+                        <option value="Gains">Gain</option>
+                    </select>
                 </div>
-                <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQpj4q0I_0ueCPz6ofi7pE8JMqId_ZJr1bFP4aGIm0nRpDCVV-Sx52Z-pjW&s=10" alt="Card Illustration" class="card-illustration">
+                <div class="input-group">
+                    <label for="transactionWhatKind">Category</label>
+                    <input type="text" id="transactionWhatKind" class="text-input" placeholder="e.g., Food, Salary, Shopping">
+                </div>
+                <div class="input-group">
+                    <label for="transactionAmount">Amount</label>
+                    <input type="number" id="transactionAmount" class="text-input" placeholder="0.00">
+                </div>
+                <div class="input-group">
+                    <label for="transactionDescription">Description (Optional)</label>
+                    <input type="text" id="transactionDescription" class="text-input" placeholder="e.g., Dinner with friends">
+                </div>
+                <button class="button button-primary">Add Transaction</button>
             </section>
         </main>
-    </div>
 
-    <button class="fab-button" id="addTransactionFab">+</button>
-    <button class="fab-button fab-calculator" id="openCalculatorFab">CALC</button>
-
-    <div class="calculator-overlay" id="calculatorOverlay">
-        <div class="calculator-card" id="calculatorCard">
-            <div class="calculator-header">
-                <h3>Calculator</h3>
-                <button class="close-calculator-button" id="closeCalculatorButton">&times;</button>
-            </div>
-            <div class="calculator-body">
-                <input type="text" class="calculator-display" id="calculatorDisplay" value="0" readonly>
+        <div class="calculator-overlay" id="calculatorOverlay">
+            <div class="calculator-card">
+                <div class="calculator-header">
+                    <h3>Calculator</h3>
+                    <button class="close-calculator-button" id="closeCalculatorButton">&times;</button>
+                </div>
+                <input type="text" class="calculator-display" id="calculatorDisplay" value="0" disabled readonly>
                 <div class="calculator-buttons">
-                    <button class="calc-btn clear" data-action="clear">C</button>
+                    <button class="calc-btn clear" data-action="clear">AC</button>
                     <button class="calc-btn backspace" data-action="backspace">←</button>
                     <button class="calc-btn operator" data-action="divide">/</button>
                     <button class="calc-btn operator" data-action="multiply">*</button>
@@ -129,6 +167,9 @@
             </div>
         </div>
     </div>
+
+    <button class="fab-button" id="addTransactionFab">+</button>
+    <button class="fab-button fab-calculator" id="openCalculatorFab">CALC</button>
 
     <script src="script.js"></script>
 </body>
