@@ -46,8 +46,8 @@ body {
     background-color: var(--primary-bg);
     min-height: 100vh;
     box-shadow: var(--shadow-md);
-    overflow: hidden;
-    position: relative; /* Needed for calculator overlay positioning */
+    overflow: hidden; /* Needed for calculator overlay positioning */
+    position: relative;
     transition: background-color 0.3s ease, box-shadow 0.3s ease;
 }
 
@@ -167,10 +167,10 @@ body {
     text-decoration: none;
     color: var(--text-dark);
     font-size: 1.1rem;
+    padding: 10px 15px;
     display: block;
-    padding: 10px 0;
     border-radius: 8px;
-    transition: background-color 0.2s, color 0.2s;
+    transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 .main-menu-sidebar ul li a:hover {
@@ -178,13 +178,12 @@ body {
     color: var(--accent-blue);
 }
 
-
 /* Main Content Area */
 .main-content {
     padding: 20px;
 }
 
-/* Cards */
+/* Card Styles */
 .card {
     background-color: var(--card-bg);
     border-radius: 12px;
@@ -194,23 +193,22 @@ body {
     transition: background-color 0.3s ease, box-shadow 0.3s ease;
 }
 
-/* Summary Card (Donut Chart) */
+/* Summary Card (for chart) */
 .summary-card {
     display: flex;
     flex-direction: column;
     align-items: center;
+    gap: 20px;
 }
 
 .chart-container {
     position: relative;
-    width: 200px;
-    height: 200px;
-    margin-bottom: 20px;
-}
-
-#expenseChart {
-    width: 100% !important;
-    height: 100% !important;
+    width: 100%;
+    max-width: 250px; /* Adjust max-width for the chart */
+    height: 250px; /* Maintain aspect ratio */
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
 
 .net-expense-overlay {
@@ -219,7 +217,6 @@ body {
     left: 50%;
     transform: translate(-50%, -50%);
     text-align: center;
-    pointer-events: none;
 }
 
 .net-expense-overlay .label {
@@ -231,39 +228,84 @@ body {
 
 .net-expense-overlay .amount {
     display: block;
-    font-size: 1.5rem;
-    font-weight: bold;
+    font-size: 1.6rem;
+    font-weight: 700;
     color: var(--text-dark);
 }
 
+.net-expense-overlay .amount.expense {
+    color: var(--accent-red);
+}
+
+.net-expense-overlay .amount.gain {
+    color: var(--accent-green);
+}
+
 .legend {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 15px;
     width: 100%;
+    display: grid;
+    grid-template-columns: 1fr 1fr; /* Two columns for legend items */
+    gap: 10px;
+    margin-top: 10px;
 }
 
 .legend-item {
     display: flex;
     align-items: center;
-    font-size: 0.9rem;
+    font-size: 0.95rem;
     color: var(--text-light);
 }
 
 .legend-item .dot {
-    width: 10px;
-    height: 10px;
+    width: 12px;
+    height: 12px;
     border-radius: 50%;
     margin-right: 8px;
+    flex-shrink: 0;
 }
 
-/* Legend dot colors - MUST match Chart.js backgroundColors */
 .legend-item .dot.food { background-color: var(--accent-green); }
 .legend-item .dot.medicines { background-color: var(--accent-red); }
 .legend-item .dot.shopping { background-color: var(--accent-orange); }
 .legend-item .dot.misc { background-color: var(--accent-blue); }
 
+/* Summary Info Cards (Total Expenses/Gains) */
+.summary-info-cards {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+}
+
+.info-card {
+    padding: 15px;
+    border-radius: 10px;
+    background-color: var(--primary-bg); /* Lighter background for info cards */
+    box-shadow: var(--shadow-sm);
+    text-align: center;
+    transition: background-color 0.3s ease;
+}
+
+.info-card h3 {
+    margin-top: 0;
+    margin-bottom: 10px;
+    font-size: 1rem;
+    color: var(--text-light);
+}
+
+.info-card p {
+    font-size: 1.4rem;
+    font-weight: 700;
+    margin: 0;
+    color: var(--text-dark);
+}
+
+.info-card.expenses p {
+    color: var(--accent-red);
+}
+
+.info-card.gains p {
+    color: var(--accent-green);
+}
 
 /* Limit Card (Remaining Balance) */
 .limit-card {
@@ -295,132 +337,51 @@ body {
     stroke: var(--accent-green);
     fill: transparent;
     stroke-width: 6;
-    transition: stroke-dashoffset 0.35s, stroke 0.35s;
+    transition: stroke-dashoffset 0.3s ease, stroke 0.3s ease;
     transform: rotate(-90deg);
     transform-origin: 50% 50%;
 }
 
-/* Refined progress text positioning */
 .progress-text {
     position: absolute;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    font-size: 1.1rem; /* Adjust as needed */
+    font-size: 1.1rem;
     font-weight: bold;
     color: var(--text-dark);
-    pointer-events: none;
-    z-index: 1;
-    text-align: center;
-    line-height: 1.1; /* Slightly adjust line-height for better vertical centering */
-    /* Ensure no unwanted spacing from inherited properties */
-    margin: 0;
-    padding: 0;
 }
 
-
 .limit-details {
-    display: flex;
-    flex-direction: column;
     flex-grow: 1;
     margin-left: 15px;
 }
 
 .limit-title {
+    display: block;
     font-size: 0.9rem;
     color: var(--text-light);
+    margin-bottom: 5px;
 }
 
 .limit-amount {
-    font-size: 1.2rem;
+    display: block;
+    font-size: 1.3rem;
     font-weight: bold;
     color: var(--text-dark);
 }
 
 .arrow-link {
-    font-size: 2rem;
+    font-size: 1.5rem;
     color: var(--text-light);
     text-decoration: none;
-    padding-left: 10px;
-    flex-shrink: 0;
+    margin-left: 15px;
+    transition: color 0.2s ease;
 }
 
-/* Savings Card (similar to transactions promo card) */
-.savings-card {
-    background-color: var(--accent-green); /* Green background for savings */
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    color: white; /* White text for contrast */
-    padding: 15px 20px;
-    min-height: 100px;
-    overflow: hidden;
+.arrow-link:hover {
+    color: var(--accent-blue);
 }
-
-.savings-card .promo-text {
-    flex-basis: 60%;
-    padding-right: 10px;
-    color: inherit; /* Inherit color from parent */
-}
-
-.savings-card .promo-text h2 {
-    font-size: 1.3rem;
-    margin-top: 0;
-    margin-bottom: 10px;
-    font-weight: 600;
-    color: inherit;
-}
-
-.savings-card .savings-amount {
-    display: block;
-    font-size: 1.4rem;
-    font-weight: bold;
-    margin-bottom: 10px;
-}
-
-.savings-card .mask-button {
-    background-color: rgba(255, 255, 255, 0.2); /* Slightly transparent white */
-    color: white;
-    border: none;
-    padding: 6px 12px;
-    border-radius: 6px;
-    font-weight: 500;
-    font-size: 0.85rem;
-    cursor: pointer;
-    margin-right: 10px;
-    transition: background-color 0.2s;
-}
-
-.savings-card .mask-button:hover {
-    background-color: rgba(255, 255, 255, 0.3);
-}
-
-.savings-card .view-savings-button {
-    background-color: var(--card-bg); /* White background for button */
-    color: var(--accent-green); /* Green text */
-    padding: 8px 15px;
-    border-radius: 8px;
-    text-decoration: none;
-    font-weight: 600;
-    font-size: 0.95rem;
-    box-shadow: var(--shadow-sm);
-    transition: background-color 0.2s, color 0.2s;
-}
-
-.savings-card .view-savings-button:hover {
-    background-color: #f0f0f0;
-    color: var(--accent-green);
-}
-
-.savings-card .card-illustration {
-    width: 100px;
-    height: auto;
-    display: block;
-    flex-basis: 40%;
-    max-width: 120px;
-    object-fit: contain;
-}
-
 
 /* Transactions Promo Card */
 .transactions-promo-card {
@@ -450,118 +411,120 @@ body {
     background-color: var(--card-bg);
     color: var(--text-dark);
     padding: 8px 15px;
-    border-radius: 8px;
+    border-radius: 20px;
     text-decoration: none;
-    font-weight: 600;
-    font-size: 0.95rem;
+    font-size: 0.9rem;
+    font-weight: 500;
     box-shadow: var(--shadow-sm);
-    transition: background-color 0.2s;
+    transition: background-color 0.2s ease, transform 0.2s ease;
 }
 
-.promo-text .button:hover {
-    background-color: #f0f0f0;
+.promo-text .button:active {
+    transform: scale(0.98);
 }
 
 .card-illustration {
-    width: 100px; /* Fixed width for the image */
-    height: auto; /* Maintain aspect ratio */
-    display: block; /* Remove extra space below image */
-    flex-basis: 40%; /* Adjust width for image */
-    max-width: 120px; /* A bit more flexible max-width */
-    object-fit: contain; /* Ensure image fits without cropping */
+    width: 100px;
+    height: auto;
+    display: block;
+    flex-basis: 40%;
+    max-width: 120px;
+    object-fit: contain;
 }
 
-
-/* Transactions Page Styles (transactions.html) */
+/* Months Navigation (Transactions Page) */
 .months-nav {
     display: flex;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
+    overflow-x: auto; /* Enable horizontal scrolling */
+    -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
     padding: 10px 20px;
-    gap: 10px;
     background-color: var(--card-bg);
     border-bottom: 1px solid var(--border-color);
-    white-space: nowrap;
-    justify-content: flex-start;
-    align-items: center;
+    white-space: nowrap; /* Prevent buttons from wrapping */
+    gap: 8px; /* Space between buttons */
+    scrollbar-width: none; /* Hide scrollbar for Firefox */
+    -ms-overflow-style: none;  /* Hide scrollbar for IE and Edge */
+    position: sticky;
+    top: 60px; /* Below the header */
+    z-index: 990;
     transition: background-color 0.3s ease, border-color 0.3s ease;
 }
 
-.month-button {
+/* Hide scrollbar for Chrome, Safari, and Opera */
+.months-nav::-webkit-scrollbar {
+    display: none;
+}
+
+.months-nav .month-button {
     background-color: var(--primary-bg);
     border: 1px solid var(--border-color);
-    border-radius: 8px;
+    border-radius: 20px;
     padding: 8px 15px;
     font-size: 0.9rem;
-    color: var(--text-dark);
+    font-weight: 500;
+    color: var(--text-light);
     cursor: pointer;
-    transition: background-color 0.2s, border-color 0.2s, color 0.2s;
-    flex-shrink: 0;
+    transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+    flex-shrink: 0; /* Prevent buttons from shrinking */
 }
 
-.month-button.active {
-    background-color: var(--accent-orange);
+.months-nav .month-button.active {
+    background-color: var(--accent-blue);
     color: white;
-    border-color: var(--accent-orange);
+    border-color: var(--accent-blue);
 }
 
-.month-button:hover:not(.active) {
-    background-color: #E0E0E0;
-}
-body.dark-mode .month-button:hover:not(.active) {
-    background-color: #444444;
+.months-nav .month-button:hover:not(.active) {
+    background-color: var(--border-color);
 }
 
+/* Transactions Header Row */
 .transactions-header-row {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-top: 20px;
-    margin-bottom: 10px;
-    padding: 0 20px;
+    margin-bottom: 15px;
+    padding: 0 20px; /* Add padding to align with main-content */
 }
 
 .transactions-header-row h2 {
     font-size: 1.3rem;
     margin: 0;
-    font-weight: 600;
+    color: var(--text-dark);
 }
 
 .filter-button {
-    background-color: var(--primary-bg);
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
+    background-color: var(--accent-blue);
+    color: white;
     padding: 8px 15px;
+    border: none;
+    border-radius: 20px;
     font-size: 0.9rem;
-    color: var(--text-dark);
+    font-weight: 500;
     cursor: pointer;
-    transition: background-color 0.2s, color 0.2s, border-color 0.2s;
+    transition: background-color 0.2s ease, transform 0.2s ease;
 }
 
-.filter-button:hover {
-    background-color: #E0E0E0;
-}
-body.dark-mode .filter-button:hover {
-    background-color: #444444;
+.filter-button:active {
+    transform: scale(0.98);
 }
 
-/* New Filter Options Container Styling */
+/* Filter Options Container */
 .filter-options-container {
     background-color: var(--card-bg);
     border-radius: 12px;
-    padding: 15px 20px; /* Adjusted padding */
-    margin: 0 20px 20px 20px; /* Creates separation */
+    padding: 15px 20px;
+    margin: 0 20px 20px 20px; /* Adjust margin to sit below header row and align with content */
     box-shadow: var(--shadow-sm);
-    display: none; /* Hidden by default, shown by JS */
-    flex-direction: column; /* Stack dropdowns and buttons */
-    gap: 15px; /* Space between filter groups */
+    display: none; /* Hidden by default */
+    flex-direction: column;
+    gap: 15px;
     transition: background-color 0.3s ease, box-shadow 0.3s ease;
 }
 
-.filter-dropdown-group,
-.filter-date-group {
+.filter-dropdown-group, .filter-date-group {
     display: flex;
-    flex-direction: column; /* Stack label and input/select */
+    flex-direction: column;
     gap: 8px;
 }
 
@@ -582,55 +545,52 @@ body.dark-mode .filter-button:hover {
     color: var(--text-dark);
     background-color: var(--primary-bg); /* Light background for input/select */
     box-sizing: border-box; /* Include padding and border in the element's total width and height */
-    -webkit-appearance: none; /* Remove default styling for select */
-    -moz-appearance: none;
-    appearance: none;
-    transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+    transition: border-color 0.2s ease, background-color 0.2s ease;
 }
 
-.filter-options-container select {
-    background-image: url('data:image/svg+xml;utf8,<svg fill="%23333333" height="24" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg"><path d="M7 10l5 5 5-5z"/><path d="M0 0h24v24H0z" fill="none"/></svg>'); /* Custom dropdown arrow */
-    background-repeat: no-repeat;
-    background-position: right 10px center;
-    padding-right: 30px; /* Make space for the arrow */
-}
-body.dark-mode .filter-options-container select {
-    background-image: url('data:image/svg+xml;utf8,<svg fill="%23E0E0E0" height="24" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg"><path d="M7 10l5 5 5-5z"/><path d="M0 0h24v24H0z" fill="none"/></svg>'); /* White arrow for dark mode */
+.filter-options-container select:focus,
+.filter-options-container input[type="date"]:focus {
+    outline: none;
+    border-color: var(--accent-blue);
+    box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.2);
 }
 
-
-.apply-filters-button,
-.clear-filters-button {
-    background-color: var(--accent-blue);
-    color: white;
-    padding: 10px 15px;
-    border: none;
+.apply-filters-button, .clear-filters-button {
+    width: 100%;
+    padding: 12px;
     border-radius: 8px;
     font-size: 1rem;
     font-weight: 600;
     cursor: pointer;
-    transition: background-color 0.2s;
-    width: 100%; /* Make buttons full width */
-    margin-top: 5px; /* Small space between them */
+    transition: background-color 0.2s ease, transform 0.2s ease;
 }
 
-.apply-filters-button:hover {
-    background-color: #1976D2; /* Darker blue on hover */
+.apply-filters-button {
+    background-color: var(--accent-green);
+    color: white;
+    border: none;
+}
+
+.apply-filters-button:active {
+    transform: scale(0.98);
 }
 
 .clear-filters-button {
-    background-color: var(--text-light); /* Different color for clear */
+    background-color: var(--border-color);
+    color: var(--text-dark);
+    border: none;
+    margin-top: 5px;
 }
 
-.clear-filters-button:hover {
-    background-color: #555555;
+.clear-filters-button:active {
+    transform: scale(0.98);
 }
 
 
 /* Transactions List */
 .transactions-list {
-    margin-top: 10px;
     padding: 0 20px;
+    margin-top: 15px;
 }
 
 .transaction-group {
@@ -638,13 +598,11 @@ body.dark-mode .filter-options-container select {
 }
 
 .transaction-date-header {
-    font-size: 1rem;
-    font-weight: bold;
-    color: var(--text-dark);
-    margin-bottom: 15px;
-    padding-bottom: 5px;
-    border-bottom: 1px solid var(--border-color);
-    transition: color 0.3s ease, border-color 0.3s ease;
+    font-size: 0.9rem;
+    color: var(--text-light);
+    font-weight: 600;
+    margin-bottom: 10px;
+    text-transform: uppercase;
 }
 
 .transaction-item {
@@ -655,7 +613,11 @@ body.dark-mode .filter-options-container select {
     padding: 12px 15px;
     margin-bottom: 10px;
     box-shadow: var(--shadow-sm);
-    transition: background-color 0.3s ease, box-shadow 0.3s ease;
+    transition: background-color 0.2s ease, transform 0.1s ease;
+}
+
+.transaction-item:active {
+    transform: scale(0.99);
 }
 
 .transaction-category-icon {
@@ -665,17 +627,18 @@ body.dark-mode .filter-options-container select {
     display: flex;
     justify-content: center;
     align-items: center;
-    font-size: 1.3rem;
-    margin-right: 15px;
+    font-size: 1.2rem;
+    margin-right: 12px;
     flex-shrink: 0;
 }
 
-/* Category icon background colors */
+/* Category-specific background colors for icons */
 .transaction-category-icon.category-gain { background-color: #E8F5E9; }
 .transaction-category-icon.category-food { background-color: #FFF3E0; }
 .transaction-category-icon.category-medicines { background-color: #FFEBEE; }
 .transaction-category-icon.category-shopping { background-color: #E3F2FD; }
 .transaction-category-icon.category-misc { background-color: #EDE7F6; }
+
 
 /* Dark mode adjustments for icons */
 body.dark-mode .transaction-category-icon.category-gain { background-color: #388E3C; color: #E8F5E9; }
@@ -717,118 +680,7 @@ body.dark-mode .transaction-category-icon.category-misc { background-color: #673
     color: var(--accent-green);
 }
 
-/* Savings Page Specific Styles */
-#savings-page .main-content {
-    padding-top: 0; /* Remove top padding for savings page */
-}
-
-.savings-detail-card {
-    text-align: center;
-    padding: 25px;
-    background-color: var(--accent-blue);
-    color: white;
-    box-shadow: var(--shadow-md);
-    margin-bottom: 25px;
-}
-
-.savings-detail-card h2 {
-    margin-top: 0;
-    font-size: 1.6rem;
-    font-weight: 700;
-}
-
-.savings-detail-card p {
-    font-size: 1.1rem;
-    margin-bottom: 8px;
-}
-
-.savings-detail-card #totalSavingsAmount,
-.savings-detail-card #savingsGoal,
-.savings-detail-card #savingsProgressPct {
-    font-weight: bold;
-    font-size: 1.2rem;
-}
-
-.progress-bar-container {
-    width: 100%;
-    background-color: rgba(255, 255, 255, 0.3);
-    border-radius: 10px;
-    height: 15px;
-    margin: 15px 0;
-    overflow: hidden;
-}
-
-.progress-bar {
-    height: 100%;
-    width: 0%; /* Controlled by JS */
-    background-color: white;
-    border-radius: 10px;
-    transition: width 0.5s ease-in-out;
-}
-
-#editSavingsGoal {
-    background-color: var(--card-bg);
-    color: var(--accent-blue);
-    padding: 10px 20px;
-    border: none;
-    border-radius: 8px;
-    font-size: 1rem;
-    font-weight: 600;
-    cursor: pointer;
-    margin-top: 15px;
-    box-shadow: var(--shadow-sm);
-    transition: background-color 0.2s, color 0.2s;
-}
-
-#editSavingsGoal:hover {
-    background-color: #f0f0f0;
-}
-
-.recent-savings-contributions {
-    padding: 20px;
-}
-
-.recent-savings-contributions h2 {
-    font-size: 1.4rem;
-    margin-top: 0;
-    margin-bottom: 15px;
-}
-
-.contribution-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 10px 0;
-    border-bottom: 1px solid var(--border-color);
-}
-
-.contribution-item:last-child {
-    border-bottom: none;
-}
-
-.contribution-details span {
-    display: block;
-}
-
-.contribution-details .date {
-    font-size: 0.85rem;
-    color: var(--text-light);
-}
-
-.contribution-details .description {
-    font-size: 1rem;
-    font-weight: 500;
-    color: var(--text-dark);
-}
-
-.contribution-amount {
-    font-size: 1.1rem;
-    font-weight: bold;
-    color: var(--accent-green);
-}
-
-
-/* Floating Action Buttons */
+/* Floating Action Button */
 .fab-button {
     position: fixed;
     bottom: 25px;
@@ -843,10 +695,10 @@ body.dark-mode .transaction-category-icon.category-misc { background-color: #673
     display: flex;
     justify-content: center;
     align-items: center;
-    cursor: pointer;
     box-shadow: var(--shadow-md);
-    transition: background-color 0.2s, transform 0.2s;
+    cursor: pointer;
     z-index: 1000;
+    transition: background-color 0.2s ease, transform 0.2s ease;
 }
 
 .fab-button:active {
@@ -864,6 +716,7 @@ body.dark-mode .transaction-category-icon.category-misc { background-color: #673
     background-color: var(--accent-blue); /* Different color for calculator */
 }
 
+
 /* Calculator Pop-up Styling */
 .calculator-overlay {
     position: fixed;
@@ -871,11 +724,11 @@ body.dark-mode .transaction-category-icon.category-misc { background-color: #673
     left: 0;
     width: 100%;
     height: 100%;
-    background-color: rgba(0, 0, 0, 0.5); /* Dimmed background */
+    background-color: rgba(0, 0, 0, 0.7); /* Dim background */
     display: flex;
     justify-content: center;
     align-items: center;
-    z-index: 2000; /* Above all other content */
+    z-index: 2000; /* Above everything */
     opacity: 0;
     visibility: hidden;
     transition: opacity 0.3s ease, visibility 0.3s ease;
@@ -886,62 +739,46 @@ body.dark-mode .transaction-category-icon.category-misc { background-color: #673
     visibility: visible;
 }
 
-.calculator-card {
+.calculator {
     background-color: var(--card-bg);
-    border-radius: 12px;
+    border-radius: 15px;
+    padding: 20px;
+    width: 90%;
+    max-width: 350px;
     box-shadow: var(--shadow-md);
-    width: 90%; /* Max width for mobile */
-    max-width: 320px; /* Fixed width for calculator */
-    padding: 15px;
     display: flex;
     flex-direction: column;
-    transform: translateY(20px); /* Start slightly below center */
-    transition: transform 0.3s ease, background-color 0.3s ease, box-shadow 0.3s ease;
-}
-
-.calculator-overlay.active .calculator-card {
-    transform: translateY(0); /* Animate to center */
+    gap: 15px;
+    position: relative;
+    transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
 }
 
 .calculator-header {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 15px;
-    padding-bottom: 10px;
-    border-bottom: 1px solid var(--border-color);
-    transition: border-color 0.3s ease;
-}
-
-.calculator-header h3 {
-    margin: 0;
-    font-size: 1.2rem;
-    color: var(--text-dark);
+    justify-content: flex-end;
 }
 
 .close-calculator-button {
     background: none;
     border: none;
-    font-size: 1.8rem;
+    font-size: 2rem;
     color: var(--text-light);
     cursor: pointer;
-    line-height: 1;
-    padding: 0 5px;
     transition: color 0.3s ease;
 }
 
 .calculator-display {
     width: 100%;
+    height: 60px;
     background-color: var(--primary-bg);
     border: 1px solid var(--border-color);
     border-radius: 8px;
-    padding: 15px;
-    font-size: 2em;
     text-align: right;
-    margin-bottom: 15px;
+    font-size: 2.2em;
+    padding: 10px 15px;
     box-sizing: border-box;
     color: var(--text-dark);
-    font-weight: 500;
+    margin-bottom: 10px;
     transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
 }
 
@@ -972,6 +809,11 @@ body.dark-mode .transaction-category-icon.category-misc { background-color: #673
     color: white;
 }
 
+.calc-btn.backspace {
+    background-color: var(--accent-orange);
+    color: white;
+}
+
 .calc-btn.operator {
     background-color: var(--accent-blue);
     color: white;
@@ -990,21 +832,73 @@ body.dark-mode .transaction-category-icon.category-misc { background-color: #673
 .calc-btn:hover {
     filter: brightness(0.95);
 }
-body.dark-mode .calc-btn:not(.clear):not(.operator):not(.equals) {
-    background-color: #4A4A4A;
+
+/* Pagination Controls */
+.pagination-controls {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 15px;
+    margin-top: 20px;
+    margin-bottom: 20px;
+    padding: 0 20px;
+}
+
+.pagination-button {
+    background-color: var(--accent-blue);
+    color: white;
+    padding: 10px 18px;
+    border: none;
+    border-radius: 20px;
+    font-size: 0.95rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s ease, transform 0.2s ease;
+}
+
+.pagination-button:disabled {
+    background-color: var(--border-color);
+    color: var(--text-light);
+    cursor: not-allowed;
+}
+
+.pagination-button:active:not(:disabled) {
+    transform: scale(0.98);
+}
+
+.pagination-info {
+    font-size: 1rem;
     color: var(--text-dark);
-    border-color: #666666;
-}
-body.dark-mode .calc-btn:not(.clear):not(.operator):not(.equals):hover {
-    background-color: #5A5A5A;
+    font-weight: 500;
 }
 
+/* Savings Page Specific Styles */
+.savings-detail-card h2 {
+    font-size: 1.3rem;
+    margin-top: 0;
+    margin-bottom: 10px;
+    color: var(--text-dark);
+}
 
-/* Responsive Adjustments (Optional, for wider screens if needed) */
-@media (min-width: 600px) {
-    .container {
-        border-radius: 10px;
-        margin-top: 20px;
-        margin-bottom: 20px;
-    }
+.savings-detail-card p {
+    font-size: 1.1rem;
+    margin-bottom: 8px;
+    color: var(--text-light);
+}
+
+.savings-detail-card p span {
+    font-weight: bold;
+    color: var(--accent-green); /* Green for total savings amount */
+}
+
+.recent-contributions-section {
+    padding: 0 20px;
+    margin-top: 20px;
+}
+
+.recent-contributions-section h2 {
+    font-size: 1.3rem;
+    margin-top: 0;
+    margin-bottom: 15px;
+    color: var(--text-dark);
 }
