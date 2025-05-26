@@ -21,10 +21,11 @@ body.dark-mode {
     --primary-bg: #2C2C2C; /* Darker background */
     --card-bg: #3A3A3A; /* Darker card background */
     --text-dark: #E0E0E0; /* Lighter text for headings */
-    --text-light: #B0B0B0; /* Slightly lighter text for details */
+    --text-light: #AAAAAA; /* Lighter text for details */
     --border-color: #555555; /* Darker border */
-    --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.2);
-    --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.3);
+    --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.4);
+    color: var(--text-dark);
 }
 
 body {
@@ -33,207 +34,299 @@ body {
     padding: 0;
     background-color: var(--primary-bg);
     color: var(--text-dark);
-    transition: background-color 0.3s, color 0.3s;
+    line-height: 1.6;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    transition: background-color 0.3s ease, color 0.3s ease; /* Smooth transition for dark mode */
 }
 
 .container {
-    max-width: 480px; /* Max width for mobile-first design */
+    max-width: 500px;
     margin: 0 auto;
     background-color: var(--primary-bg);
     min-height: 100vh;
-    box-shadow: var(--shadow-md); /* Subtle shadow for the container */
-    position: relative; /* For FAB buttons */
+    box-shadow: var(--shadow-md);
+    overflow: hidden;
+    position: relative; /* Needed for calculator overlay positioning */
+    transition: background-color 0.3s ease, box-shadow 0.3s ease;
 }
 
-/* Header */
+/* Header - Base styles for all headers */
 .header {
     display: flex;
-    justify-content: space-between;
     align-items: center;
     padding: 15px 20px;
     background-color: var(--card-bg);
     border-bottom: 1px solid var(--border-color);
-    box-shadow: var(--shadow-sm);
     position: sticky;
     top: 0;
     z-index: 1000;
+    transition: background-color 0.3s ease, border-color 0.3s ease;
 }
 
 .header h1 {
-    font-size: 1.5em;
-    margin: 0;
-    color: var(--text-dark);
-}
-
-.menu-button {
-    background: none;
-    border: none;
-    font-size: 1.8em;
-    cursor: pointer;
-    color: var(--text-dark);
-    padding: 5px;
+    flex-grow: 1; /* Allow title to take available space */
+    text-align: center; /* Center the title */
+    margin: 0; /* Remove default margin */
+    font-size: 1.5rem;
 }
 
 .header-right-icons {
     display: flex;
     align-items: center;
-    gap: 15px;
+    gap: 10px; /* Space between icons if more are added */
 }
 
-.profile-icon, .notification-icon {
-    width: 28px;
-    height: 28px;
-    background-size: cover;
+.menu-button {
+    background: none;
+    border: none;
+    font-size: 1.8rem;
+    color: var(--text-dark);
     cursor: pointer;
-    border-radius: 50%; /* Make profile icon round */
+    padding: 0 10px 0 0;
+    flex-shrink: 0;
+    transition: color 0.3s ease;
 }
 
+/* Updated profile-icon to also act as the date display and night mode toggle */
 .profile-icon {
-    background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR0Y64i_O2R2P7pGg8r7R3-7k3v2nI3P3G4Zg&s'); /* Example profile pic */
-}
-
-.night-mode-toggle {
-    width: 28px;
-    height: 28px;
-    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" fill="%23666666" viewBox="0 0 24 24"><path d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75S6.615 21.75 12 21.75s9.75-4.365 9.75-9.75S17.385 2.25 12 2.25zm0 17.5V4.75c3.991 0 7.234 3.243 7.234 7.234S15.991 19.75 12 19.75z"/></svg>');
-    background-size: cover;
+    width: 40px; /* Smaller for just 'P' or a simple icon */
+    height: 40px;
+    border-radius: 50%;
+    background-color: var(--accent-orange);
+    color: white;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-weight: bold;
+    font-size: 1.2rem;
     cursor: pointer;
-    transition: transform 0.3s ease;
+    flex-shrink: 0;
+    box-shadow: var(--shadow-sm);
+    transition: background-color 0.3s ease, transform 0.2s ease;
 }
 
-body.dark-mode .night-mode-toggle {
-    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" fill="%23E0E0E0" viewBox="0 0 24 24"><path d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75S6.615 21.75 12 21.75s9.75-4.365 9.75-9.75S17.385 2.25 12 2.25zm0 17.5V4.75c3.991 0 7.234 3.243 7.234 7.234S15.991 19.75 12 19.75z"/></svg>');
-    transform: rotate(360deg);
+.profile-icon:active {
+    transform: scale(0.95);
 }
 
-/* Main Menu Sidebar */
+/* Hamburger Menu Sidebar */
 .main-menu-sidebar {
     position: fixed;
     top: 0;
     left: -280px; /* Hidden by default */
-    width: 250px;
+    width: 260px;
     height: 100%;
     background-color: var(--card-bg);
-    box-shadow: 2px 0 5px rgba(0,0,0,0.2);
+    box-shadow: var(--shadow-md);
+    z-index: 1500;
     transition: left 0.3s ease-in-out;
-    z-index: 2000;
     padding: 20px;
     box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
 }
 
 .main-menu-sidebar.open {
     left: 0;
 }
 
-.close-sidebar-button {
+.main-menu-sidebar .close-sidebar-button {
     background: none;
     border: none;
-    font-size: 2em;
-    color: var(--text-dark);
+    font-size: 2rem;
+    color: var(--text-light);
     position: absolute;
     top: 10px;
-    right: 10px;
+    right: 15px;
     cursor: pointer;
+    transition: color 0.3s ease;
 }
 
 .main-menu-sidebar h2 {
-    color: var(--accent-blue);
-    margin-top: 50px; /* Space from close button */
-    margin-bottom: 30px;
-    font-size: 1.8em;
+    color: var(--text-dark);
+    margin-top: 0;
+    margin-bottom: 25px;
+    font-size: 1.8rem;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 15px;
+    text-align: center;
 }
 
 .main-menu-sidebar ul {
     list-style: none;
     padding: 0;
+    margin: 0;
 }
 
 .main-menu-sidebar ul li {
-    margin-bottom: 20px;
+    margin-bottom: 15px;
 }
 
 .main-menu-sidebar ul li a {
     text-decoration: none;
     color: var(--text-dark);
-    font-size: 1.1em;
-    padding: 10px 5px;
+    font-size: 1.1rem;
     display: block;
-    border-radius: 5px;
-    transition: background-color 0.2s;
+    padding: 10px 0;
+    border-radius: 8px;
+    transition: background-color 0.2s, color 0.2s;
 }
 
 .main-menu-sidebar ul li a:hover {
-    background-color: var(--border-color);
+    background-color: var(--primary-bg);
+    color: var(--accent-blue);
 }
 
-body.dark-mode .main-menu-sidebar ul li a:hover {
-    background-color: #4f4f4f;
-}
 
 /* Main Content Area */
 .main-content {
     padding: 20px;
-    display: grid;
-    gap: 20px; /* Space between cards */
+    padding-bottom: 160px; /* Space for two FABs + calculator FAB */
 }
 
-/* Card Styling */
+/* Cards */
 .card {
     background-color: var(--card-bg);
     border-radius: 12px;
     padding: 20px;
+    margin-bottom: 20px;
     box-shadow: var(--shadow-sm);
-    transition: background-color 0.3s, box-shadow 0.3s;
+    transition: background-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+/* Summary Card (Donut Chart) */
+.summary-card {
     display: flex;
     flex-direction: column;
+    align-items: center;
 }
 
-/* Dashboard Specific Cards */
-.summary-card {
-    align-items: center; /* Center chart and legend */
-}
-
-.chart-filters {
+.chart-header {
     display: flex;
-    justify-content: flex-end;
-    gap: 10px;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
     margin-bottom: 15px;
-    width: 100%; /* Ensure filters take full width of card */
+    padding: 0 10px;
+    box-sizing: border-box;
 }
 
-.chart-filters select {
-    padding: 8px 12px;
+.chart-header h2 {
+    font-size: 1.2rem;
+    color: var(--text-dark);
+    margin: 0;
+}
+
+.filter-button {
+    background-color: var(--primary-bg);
     border: 1px solid var(--border-color);
     border-radius: 8px;
-    background-color: var(--card-bg);
+    padding: 8px 15px;
+    font-size: 0.9rem;
     color: var(--text-dark);
-    font-family: 'Inter', sans-serif;
-    font-size: 0.9em;
     cursor: pointer;
-    -webkit-appearance: none;
+    transition: background-color 0.2s, color 0.2s, border-color 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.filter-button:hover {
+    background-color: #E0E0E0;
+}
+
+body.dark-mode .filter-button {
+    background-color: var(--card-bg);
+    border-color: var(--border-color);
+    color: var(--text-dark);
+}
+
+body.dark-mode .filter-button:hover {
+    background-color: #444444;
+}
+
+.filter-button .arrow-down {
+    display: inline-block;
+    width: 0;
+    height: 0;
+    border-left: 4px solid transparent;
+    border-right: 4px solid transparent;
+    border-top: 5px solid var(--text-dark);
+    margin-left: 5px;
+    transition: transform 0.2s ease;
+}
+
+.filter-button.active .arrow-down {
+    transform: rotate(180deg);
+}
+
+/* New Filter Options Container Styling */
+.filter-options-container {
+    background-color: var(--card-bg);
+    border-radius: 12px;
+    padding: 15px 20px; /* Adjusted padding */
+    margin: 0 20px 20px 20px; /* Creates separation */
+    box-shadow: var(--shadow-sm);
+    display: none; /* Hidden by default, shown by JS */
+    width: calc(100% - 40px); /* Adjust width to fit container padding */
+    box-sizing: border-box;
+}
+
+.filter-options-container.open {
+    display: block; /* Show when open */
+}
+
+.filter-group {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 15px;
+}
+
+.filter-group label {
+    font-size: 0.9rem;
+    color: var(--text-light);
+    margin-bottom: 8px;
+    font-weight: 500;
+}
+
+.filter-options-container select {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background-color: var(--primary-bg);
+    color: var(--text-dark);
+    font-size: 1rem;
+    -webkit-appearance: none; /* Remove default dropdown arrow */
     -moz-appearance: none;
     appearance: none;
-    background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%20viewBox%3D%220%200%20292.4%20292.4%22%3E%3Cpath%20fill%3D%22%23666%22%20d%3D%22M287%20197.9c-3.2-3.2-8.3-3.2-11.6%200L146.2%2035.7%2017%20197.9c-3.2%203.2-8.3%203.2-11.6%200l-11.6-11.6c-3.2-3.2-3.2-8.3%200-11.6L140.4%205c3.2-3.2%208.3-3.2%2011.6%200L298.6%20174.7c3.2%203.2%203.2%208.3%200%2011.6l-11.6%2011.6z%22%2F%3E%3C%2Fsvg%3E');
+    background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20256%20256%22%3E%3Cpath%20fill%3D%22%23666666%22%20d%3D%22M208.56,96.56,128,177.12,47.44,96.56a8,8,0,0,0-11.31,11.31l80,80a8,8,0,0,0,11.31,0l80-80a8,8,0,0,0-11.31-11.31Z%22%3E%3C%2Fpath%3E%3C%2Fsvg%3E'); /* Custom arrow */
     background-repeat: no-repeat;
-    background-position: right 8px center;
-    background-size: 12px;
-    padding-right: 30px; /* Adjust for arrow */
+    background-position: right 12px center;
+    background-size: 16px;
+    cursor: pointer;
+    transition: border-color 0.2s, background-color 0.2s;
 }
 
-body.dark-mode .chart-filters select {
-    background-color: var(--dark-card-bg);
-    border-color: var(--dark-border-color);
-    color: var(--dark-text-color);
-    background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%20viewBox%3D%220%200%20292.4%20292.4%22%3E%3Cpath%20fill%3D%22%23ccc%22%20d%3D%22M287%20197.9c-3.2-3.2-8.3-3.2-11.6%200L146.2%2035.7%2017%20197.9c-3.2%203.2-8.3%203.2-11.6%200l-11.6-11.6c-3.2-3.2-3.2-8.3%200-11.6L140.4%205c3.2-3.2%208.3-3.2%2011.6%200L298.6%20174.7c3.2%203.2%203.2%208.3%200%2011.6l-11.6%2011.6z%22%2F%3E%3C%2Fsvg%3E');
+.filter-options-container select:focus {
+    outline: none;
+    border-color: var(--accent-blue);
+    box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.2);
 }
 
+body.dark-mode .filter-options-container select {
+    background-color: #4A4A4A; /* Darker background for dropdown */
+    border-color: #666666;
+    color: var(--text-dark);
+    background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20256%20256%22%3E%3Cpath%20fill%3D%22%23AAAAAA%22%20d%3D%22M208.56,96.56,128,177.12,47.44,96.56a8,8,0,0,0-11.31,11.31l80,80a8,8,0,0,0,11.31,0l80-80a8,8,0,0,0-11.31-11.31Z%22%3E%3C%2Fpath%3E%3C%2Fsvg%3E'); /* Lighter arrow for dark mode */
+}
+
+/* Chart Specific Styling */
 .chart-container {
     position: relative;
-    width: 100%;
-    max-width: 250px; /* Max width for the chart */
-    height: 250px; /* Maintain aspect ratio */
+    width: 200px;
+    height: 200px;
     margin-bottom: 20px;
 }
 
@@ -248,35 +341,35 @@ body.dark-mode .chart-filters select {
     left: 50%;
     transform: translate(-50%, -50%);
     text-align: center;
-    pointer-events: none; /* Allows clicks to pass through to the canvas */
+    pointer-events: none;
 }
 
 .net-expense-overlay .label {
     display: block;
-    font-size: 0.9em;
+    font-size: 0.9rem;
     color: var(--text-light);
+    margin-bottom: 5px;
 }
 
 .net-expense-overlay .amount {
     display: block;
-    font-size: 1.4em;
-    font-weight: 600;
+    font-size: 1.5rem;
+    font-weight: bold;
     color: var(--text-dark);
 }
 
 .legend {
     display: flex;
-    flex-wrap: wrap; /* Allow items to wrap */
+    flex-wrap: wrap;
     justify-content: center;
-    gap: 15px 25px; /* Row and column gap */
+    gap: 15px;
     width: 100%;
-    margin-top: 10px;
 }
 
 .legend-item {
     display: flex;
     align-items: center;
-    font-size: 0.9em;
+    font-size: 0.9rem;
     color: var(--text-light);
 }
 
@@ -287,512 +380,319 @@ body.dark-mode .chart-filters select {
     margin-right: 8px;
 }
 
-/* Chart Legend Colors - Match these to your chart.js colors */
-.dot.food { background-color: var(--accent-green); }
-.dot.medicines { background-color: var(--accent-red); }
-.dot.shopping { background-color: var(--accent-orange); }
-.dot.misc { background-color: var(--accent-blue); }
+/* Legend dot colors - MUST match Chart.js backgroundColors */
+.legend-item .dot.food { background-color: var(--accent-green); }
+.legend-item .dot.medicines { background-color: var(--accent-red); }
+.legend-item .dot.shopping { background-color: var(--accent-orange); }
+.legend-item .dot.misc { background-color: var(--accent-blue); }
+.legend-item .dot.utility-bills { background-color: #FFEB3B; } /* Matching the chart color */
 
 
-.legend-item span:last-child {
-    font-weight: 500;
-    margin-left: 5px;
-    color: var(--text-dark);
-}
-
-.summary-info-cards {
-    display: grid;
-    grid-template-columns: 1fr 1fr; /* Two columns */
-    gap: 15px;
-    background: none; /* Remove card background as children have their own */
-    box-shadow: none; /* Remove card shadow */
-    padding: 0; /* Remove padding as children have their own */
-}
-
-.summary-info-cards .info-card {
-    background-color: var(--card-bg);
-    border-radius: 12px;
-    padding: 15px;
-    box-shadow: var(--shadow-sm);
-    text-align: center;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-}
-
-.summary-info-cards .info-card h3 {
-    margin: 0;
-    font-size: 1em;
-    color: var(--text-light);
-    font-weight: 500;
-}
-
-.summary-info-cards .info-card p {
-    margin: 8px 0 0;
-    font-size: 1.4em;
-    font-weight: 700;
-}
-
-.summary-info-cards .info-card.expenses p {
-    color: var(--accent-red);
-}
-
-.summary-info-cards .info-card.gains p {
-    color: var(--accent-green);
-}
-
-
+/* Limit Card (Remaining Balance) */
 .limit-card {
     display: flex;
-    align-items: center;
     justify-content: space-between;
+    align-items: center;
 }
 
 .limit-progress-wrapper {
     position: relative;
-    width: 80px;
-    height: 80px;
-    margin-right: 15px;
+    width: 80px; /* Explicit width */
+    height: 80px; /* Explicit height */
+    flex-shrink: 0;
 }
 
 .progress-circle {
-    transform: rotate(-90deg); /* Start from the top */
     width: 100%;
     height: 100%;
 }
 
-.progress-ring-track,
-.progress-ring-progress {
-    fill: none;
-    stroke-width: 8;
-    transform-origin: 50% 50%;
-    transition: stroke-dashoffset 0.5s ease-in-out;
-}
-
 .progress-ring-track {
-    stroke: var(--border-color); /* Light gray for the track */
+    stroke: var(--border-color);
+    fill: transparent;
+    stroke-width: 6;
+    transition: stroke 0.3s ease;
 }
 
 .progress-ring-progress {
-    stroke: var(--accent-blue); /* Blue for the progress */
-    stroke-linecap: round;
-    /* Calculated in JS: stroke-dasharray="213.63" stroke-dashoffset="53.4075" */
+    stroke: var(--accent-green);
+    fill: transparent;
+    stroke-width: 6;
+    transition: stroke-dashoffset 0.35s, stroke 0.35s;
+    transform: rotate(-90deg);
+    transform-origin: 50% 50%;
 }
 
+/* Refined progress text positioning */
 .progress-text {
     position: absolute;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    font-size: 1.1em;
-    font-weight: 600;
+    font-size: 1.1rem; /* Adjust as needed */
+    font-weight: bold;
     color: var(--text-dark);
+    pointer-events: none;
+    z-index: 1;
+    text-align: center;
+    line-height: 1.1; /* Slightly adjust line-height for better vertical centering */
+    /* Ensure no unwanted spacing from inherited properties */
+    margin: 0;
+    padding: 0;
 }
 
+
 .limit-details {
+    display: flex;
+    flex-direction: column;
     flex-grow: 1;
+    margin-left: 15px;
 }
 
 .limit-title {
-    display: block;
-    font-size: 0.9em;
+    font-size: 0.9rem;
     color: var(--text-light);
-    margin-bottom: 5px;
 }
 
 .limit-amount {
-    display: block;
-    font-size: 1.3em;
-    font-weight: 600;
+    font-size: 1.2rem;
+    font-weight: bold;
     color: var(--text-dark);
 }
 
 .arrow-link {
-    font-size: 2em;
+    font-size: 2rem;
     color: var(--text-light);
     text-decoration: none;
-    margin-left: 15px;
+    padding-left: 10px;
+    flex-shrink: 0;
 }
 
-
-.savings-card, .transactions-promo-card {
+/* Savings Card (similar to transactions promo card) */
+.savings-card {
+    background-color: var(--accent-green); /* Green background for savings */
     display: flex;
-    align-items: center;
     justify-content: space-between;
-    gap: 15px;
-    padding: 15px 20px; /* Adjust padding for better look */
+    align-items: center;
+    color: white; /* White text for contrast */
+    padding: 15px 20px;
+    min-height: 100px;
+    overflow: hidden;
 }
 
-.savings-card .promo-text,
-.transactions-promo-card .promo-text {
-    flex-grow: 1;
+.savings-card .promo-text {
+    flex-basis: 60%;
+    padding-right: 10px;
+    color: inherit; /* Inherit color from parent */
 }
 
-.savings-card h2,
-.transactions-promo-card h2 {
-    font-size: 1.3em;
+.savings-card .promo-text h2 {
+    font-size: 1.3rem;
     margin-top: 0;
-    margin-bottom: 8px;
-    color: var(--text-dark);
+    margin-bottom: 10px;
+    font-weight: 600;
+    color: inherit;
 }
 
-.savings-amount {
-    font-size: 1.6em;
-    font-weight: 700;
-    color: var(--accent-green); /* Green for savings */
+.savings-card .savings-amount {
     display: block;
+    font-size: 1.4rem;
+    font-weight: bold;
     margin-bottom: 10px;
 }
 
-.mask-button {
-    background: none;
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
-    padding: 5px 10px;
-    font-size: 0.8em;
-    cursor: pointer;
-    color: var(--text-light);
-    transition: background-color 0.2s, color 0.2s;
-    margin-right: 10px;
-}
-
-.mask-button:hover {
-    background-color: var(--border-color);
-}
-
-body.dark-mode .mask-button {
-    background-color: var(--card-bg);
-    border-color: var(--border-color);
-    color: var(--text-light);
-}
-
-body.dark-mode .mask-button:hover {
-    background-color: #4f4f4f;
-}
-
-
-.view-savings-button,
-.transactions-promo-card .button {
-    display: inline-block;
-    background-color: var(--accent-blue);
+.savings-card .mask-button {
+    background-color: rgba(255, 255, 255, 0.2); /* Slightly transparent white */
     color: white;
-    padding: 8px 15px;
-    border-radius: 8px;
-    text-decoration: none;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 6px;
     font-weight: 500;
-    font-size: 0.9em;
+    font-size: 0.85rem;
+    cursor: pointer;
+    margin-right: 10px;
     transition: background-color 0.2s;
 }
 
-.view-savings-button:hover,
-.transactions-promo-card .button:hover {
-    background-color: #1a7ad9; /* Slightly darker blue */
+.savings-card .mask-button:hover {
+    background-color: rgba(255, 255, 255, 0.3);
 }
 
-.card-illustration {
-    width: 80px;
-    height: 80px;
+.savings-card .view-savings-button {
+    background-color: var(--card-bg); /* White background for button */
+    color: var(--accent-green); /* Green text */
+    padding: 8px 15px;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 0.95rem;
+    box-shadow: var(--shadow-sm);
+    transition: background-color 0.2s, color 0.2s;
+}
+
+.savings-card .view-savings-button:hover {
+    background-color: #f0f0f0;
+    color: var(--accent-green);
+}
+
+.savings-card .card-illustration {
+    width: 100px;
+    height: auto;
+    display: block;
+    flex-basis: 40%;
+    max-width: 120px;
     object-fit: contain;
-    flex-shrink: 0; /* Prevent shrinking */
 }
 
-/* FAB (Floating Action Buttons) */
-.fab-button {
-    position: fixed;
-    right: 25px;
-    bottom: 25px;
-    background-color: var(--accent-orange);
-    color: white;
-    border: none;
-    border-radius: 50%;
-    width: 56px;
-    height: 56px;
-    font-size: 2.5em;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    box-shadow: var(--shadow-md);
-    cursor: pointer;
-    transition: background-color 0.2s, transform 0.2s;
-    z-index: 100;
-}
-
-.fab-button:hover {
-    background-color: #e68a00;
-    transform: translateY(-2px);
-}
-
-.fab-calculator {
-    bottom: 90px; /* Position above the add transaction FAB */
-    background-color: var(--accent-blue); /* Different color for calculator */
-    font-size: 1.2em; /* Adjust font size for CALC text */
-    font-weight: bold;
-}
-
-.fab-calculator:hover {
-    background-color: #1a7ad9;
-}
-
-
-/* Calculator Overlay */
-.calculator-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.5);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 2000;
-    opacity: 0;
-    visibility: hidden;
-    transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out;
-}
-
-.calculator-overlay.open {
-    opacity: 1;
-    visibility: visible;
-}
-
-.calculator-card {
-    background-color: var(--card-bg);
-    border-radius: 15px;
-    box-shadow: var(--shadow-md);
-    width: 90%;
-    max-width: 320px;
-    transform: translateY(20px);
-    transition: transform 0.3s ease-in-out;
-}
-
-.calculator-overlay.open .calculator-card {
-    transform: translateY(0);
-}
-
-.calculator-header {
+/* Transactions Promo Card */
+.transactions-promo-card {
+    background-color: #FFC107;
     display: flex;
     justify-content: space-between;
     align-items: center;
+    color: var(--text-dark);
     padding: 15px 20px;
-    border-bottom: 1px solid var(--border-color);
+    min-height: 100px;
+    overflow: hidden; /* Ensure image doesn't overflow */
 }
 
-.calculator-header h3 {
-    margin: 0;
-    font-size: 1.2em;
-    color: var(--text-dark);
+.transactions-promo-card .promo-text {
+    flex-basis: 60%;
+    padding-right: 10px;
 }
 
-.close-calculator-button {
-    background: none;
-    border: none;
-    font-size: 1.8em;
-    color: var(--text-light);
-    cursor: pointer;
+.transactions-promo-card .promo-text h2 {
+    font-size: 1.3rem;
+    margin-top: 0;
+    margin-bottom: 10px;
+    font-weight: 600;
 }
 
-.calculator-body {
-    padding: 20px;
+.transactions-promo-card .promo-text p {
+    font-size: 0.9rem;
+    margin-bottom: 10px;
+    line-height: 1.4;
 }
 
-.calculator-display {
-    width: calc(100% - 20px); /* Adjust for padding */
-    padding: 10px;
-    font-size: 2em;
-    text-align: right;
-    margin-bottom: 15px;
-    border: 1px solid var(--border-color);
+.transactions-promo-card .view-transactions-button {
+    background-color: var(--card-bg); /* White background for button */
+    color: var(--text-dark); /* Dark text */
+    padding: 8px 15px;
     border-radius: 8px;
-    background-color: var(--primary-bg);
-    color: var(--text-dark);
-    box-sizing: border-box;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 0.95rem;
+    box-shadow: var(--shadow-sm);
+    transition: background-color 0.2s, color 0.2s;
 }
 
-.calculator-buttons {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 10px;
+.transactions-promo-card .view-transactions-button:hover {
+    background-color: #f0f0f0;
 }
 
-.calc-btn {
-    background-color: var(--border-color); /* Light gray for buttons */
-    border: none;
-    border-radius: 10px;
-    padding: 15px 0;
-    font-size: 1.5em;
-    font-weight: 500;
-    cursor: pointer;
-    transition: background-color 0.1s;
-    color: var(--text-dark);
-}
-
-.calc-btn:active {
-    filter: brightness(0.9);
-}
-
-.calc-btn.clear {
-    background-color: var(--accent-red); /* Red for AC */
-    color: white;
-}
-
-.calc-btn.operator,
-.calc-btn.equals {
-    background-color: var(--accent-blue); /* Blue for operators */
-    color: white;
-}
-
-.calc-btn.digit.zero {
-    grid-column: span 2; /* Make zero button span two columns */
-}
-
-body.dark-mode .calc-btn {
-    background-color: #555555;
-    color: var(--text-dark);
-}
-
-body.dark-mode .calc-btn.clear {
-    background-color: #cc3333;
-}
-
-body.dark-mode .calc-btn.operator,
-body.dark-mode .calc-btn.equals {
-    background-color: #1a7ad9;
-}
-
-body.dark-mode .calculator-display {
-    background-color: #444444;
-    color: var(--text-dark);
-    border-color: #666666;
-}
-
-body.dark-mode .calculator-header {
-    border-bottom-color: #555555;
+.transactions-promo-card .card-illustration {
+    width: 100px;
+    height: auto;
+    display: block;
+    flex-basis: 40%;
+    max-width: 120px;
+    object-fit: contain;
 }
 
 /* Transactions Page Specific Styles */
-#transactions-page .main-content,
-#savings-page .main-content {
-    padding-top: 0; /* Remove top padding if header is sticky */
-}
-
 .months-nav {
     display: flex;
     justify-content: space-around;
     padding: 10px 0;
     background-color: var(--card-bg);
     border-bottom: 1px solid var(--border-color);
-    overflow-x: auto; /* Enable horizontal scrolling */
-    -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
-    white-space: nowrap; /* Prevent wrapping of buttons */
     margin-bottom: 20px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE and Edge */
+}
+
+.months-nav::-webkit-scrollbar {
+    display: none; /* Chrome, Safari, Opera */
 }
 
 .month-button {
     background: none;
     border: none;
-    padding: 8px 12px;
-    font-size: 1em;
+    padding: 8px 15px;
+    font-size: 1rem;
     color: var(--text-light);
     cursor: pointer;
-    transition: color 0.2s, font-weight 0.2s, background-color 0.2s, border-radius 0.2s;
-    flex-shrink: 0; /* Prevent buttons from shrinking */
+    transition: color 0.2s, font-weight 0.2s;
+    white-space: nowrap; /* Prevent wrapping */
 }
 
 .month-button.active {
     color: var(--accent-blue);
-    font-weight: 600;
-    background-color: var(--border-color);
-    border-radius: 8px;
+    font-weight: bold;
+    border-bottom: 2px solid var(--accent-blue);
 }
 
-.month-button:hover {
-    color: var(--accent-blue);
+.transactions-list {
+    margin-top: 20px;
+    /* Ensure the list has some bottom margin if pagination is present */
+    .transactions-list:has(+ .pagination-controls) {
+        margin-bottom: 0; /* Remove bottom margin if pagination follows directly */
+    }
 }
 
-body.dark-mode .months-nav {
-    background-color: var(--card-bg);
-    border-bottom-color: var(--border-color);
+.transaction-group {
+    margin-bottom: 25px;
 }
 
-body.dark-mode .month-button {
-    color: var(--text-light);
-}
-
-body.dark-mode .month-button.active {
-    background-color: #4f4f4f;
+.transaction-date-header {
+    font-size: 1rem;
+    font-weight: bold;
     color: var(--text-dark);
-}
-
-body.dark-mode .month-button:hover {
-    color: var(--text-dark);
-}
-
-.transaction-list {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    padding: 0 20px;
-    margin-bottom: 20px;
+    margin-bottom: 15px;
+    padding-bottom: 8px;
+    border-bottom: 1px dashed var(--border-color);
 }
 
 .transaction-item {
-    background-color: var(--card-bg);
-    padding: 15px;
-    border-radius: 10px;
-    box-shadow: var(--shadow-sm);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    transition: transform 0.2s ease;
-}
-
-.transaction-item:hover {
-    transform: translateY(-2px);
-}
-
-.transaction-details {
     display: flex;
     align-items: center;
-    gap: 15px;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--border-color);
 }
 
-.category-icon {
-    width: 35px;
-    height: 35px;
-    border-radius: 50%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    font-size: 1.2em;
-    font-weight: bold;
-    color: white;
+.transaction-item:last-child {
+    border-bottom: none;
+}
+
+.transaction-icon {
+    font-size: 1.5rem;
+    margin-right: 15px;
     flex-shrink: 0;
 }
 
-.category-icon.food { background-color: var(--accent-green); }
-.category-icon.medicines { background-color: var(--accent-red); }
-.category-icon.shopping { background-color: var(--accent-orange); }
-.category-icon.misc { background-color: var(--accent-blue); }
-.category-icon.income { background-color: var(--accent-purple); }
-
-
-.transaction-info h3 {
-    margin: 0;
-    font-size: 1em;
-    color: var(--text-dark);
+.transaction-details {
+    flex-grow: 1;
 }
 
-.transaction-info p {
-    margin: 3px 0 0;
-    font-size: 0.85em;
+.transaction-name {
+    font-size: 1rem;
+    color: var(--text-dark);
+    font-weight: 500;
+    margin-bottom: 4px;
+}
+
+.transaction-category {
+    font-size: 0.85rem;
     color: var(--text-light);
 }
 
 .transaction-amount {
-    font-size: 1.1em;
-    font-weight: 600;
+    font-size: 1rem;
+    font-weight: bold;
+    color: var(--text-dark);
+    margin-left: auto;
     flex-shrink: 0;
 }
 
@@ -800,24 +700,26 @@ body.dark-mode .month-button:hover {
     color: var(--accent-red);
 }
 
-.transaction-amount.income {
+.transaction-amount.gain {
     color: var(--accent-green);
 }
 
+
+/* Pagination Controls */
 .pagination-controls {
     display: flex;
     justify-content: center;
     align-items: center;
-    gap: 5px;
-    padding: 10px 20px;
-    margin-top: 10px;
-    margin-bottom: 20px;
+    gap: 8px;
+    margin-top: 20px;
+    padding-top: 10px;
+    border-top: 1px solid var(--border-color);
 }
 
 .pagination-controls button {
-    background-color: var(--card-bg); /* Use card-bg for buttons */
+    background-color: var(--primary-bg);
     border: 1px solid var(--border-color);
-    color: var(--text-light);
+    color: var(--text-dark);
     padding: 8px 12px;
     /* margin: 0 3px; */ /* Replaced by gap */
     border-radius: 6px;
@@ -856,229 +758,247 @@ body.dark-mode .pagination-controls button:hover:not(:disabled) {
 
 /* Style for ellipsis in pagination */
 .pagination-controls span { /* This targets the span used for "..." */
-    padding: 8px 0; /* Align with button padding */
+    padding: 8px 12px;
     color: var(--text-light);
-    font-size: 0.9rem;
 }
 
-/* Filter Options Container */
-.filter-options-container {
-    background-color: var(--card-bg);
-    border-top: 1px solid var(--border-color);
-    padding: 15px 20px;
-    margin-bottom: 20px;
-    display: none; /* Hidden by default */
-    flex-direction: column;
-    gap: 15px;
+/* FAB - Floating Action Button */
+.fab-button {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background-color: var(--accent-blue);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 56px;
+    height: 56px;
+    font-size: 2rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    box-shadow: var(--shadow-md);
+    transition: background-color 0.2s, transform 0.2s;
+    z-index: 1000;
 }
 
-.filter-options-container label {
-    font-size: 0.9em;
-    color: var(--text-light);
-    margin-bottom: 5px;
-    display: block;
+.fab-button:active {
+    transform: scale(0.95);
 }
 
-.filter-options-container select,
-.filter-options-container input[type="date"] {
+.fab-calculator {
+    bottom: 85px; /* Position above the add transaction FAB */
+    background-color: var(--accent-orange); /* Different color for calculator */
+    font-size: 1rem;
+    font-weight: bold;
+}
+
+/* Calculator Overlay */
+.calculator-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
     width: 100%;
-    padding: 10px;
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
-    background-color: var(--primary-bg);
-    color: var(--text-dark);
-    font-family: 'Inter', sans-serif;
-    font-size: 1em;
-    box-sizing: border-box;
-}
-
-body.dark-mode .filter-options-container select,
-body.dark-mode .filter-options-container input[type="date"] {
-    background-color: #444444;
-    border-color: #666666;
-    color: var(--text-dark);
-}
-
-.filter-buttons {
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
     display: flex;
-    gap: 10px;
-    margin-top: 10px;
+    justify-content: center;
+    align-items: flex-end; /* Align to bottom for mobile */
+    z-index: 2000;
+    visibility: hidden;
+    opacity: 0;
+    transition: visibility 0.3s, opacity 0.3s;
 }
 
-.filter-buttons button {
-    flex: 1;
-    padding: 10px;
-    border-radius: 8px;
-    font-size: 1em;
-    font-weight: 600;
-    cursor: pointer;
-    transition: background-color 0.2s, color 0.2s;
+.calculator-overlay.open {
+    visibility: visible;
+    opacity: 1;
 }
 
-.filter-buttons .apply-filters {
-    background-color: var(--accent-blue);
-    color: white;
-    border: none;
-}
-
-.filter-buttons .apply-filters:hover {
-    background-color: #1a7ad9;
-}
-
-.filter-buttons .clear-filters {
-    background-color: var(--border-color);
-    color: var(--text-dark);
-    border: none;
-}
-
-.filter-buttons .clear-filters:hover {
-    background-color: #cccccc;
-}
-
-body.dark-mode .filter-buttons .clear-filters {
-    background-color: #555555;
-    color: var(--text-dark);
-}
-
-body.dark-mode .filter-buttons .clear-filters:hover {
-    background-color: #666666;
-}
-
-/* Savings Page Specific Styles */
-.savings-detail-card {
-    text-align: center;
-    padding: 25px 20px;
-}
-
-.savings-detail-card h2 {
-    font-size: 1.5em;
-    margin-bottom: 10px;
-    color: var(--text-dark);
-}
-
-.savings-detail-card p {
-    font-size: 1.1em;
-    color: var(--text-light);
-    margin-bottom: 15px;
-}
-
-#totalSavingsAmount {
-    font-size: 1.8em;
-    font-weight: 700;
-    color: var(--accent-green);
-    display: block;
-    margin-top: 5px;
-}
-
-.savings-goal-section {
-    padding: 20px;
+.calculator-modal {
     background-color: var(--card-bg);
-    border-radius: 12px;
-    box-shadow: var(--shadow-sm);
-    margin-bottom: 20px;
-}
-
-.savings-goal-section h3 {
-    font-size: 1.2em;
-    margin-top: 0;
-    margin-bottom: 15px;
-    color: var(--text-dark);
-}
-
-.goal-input-group {
-    margin-bottom: 15px;
-}
-
-.goal-input-group label {
-    display: block;
-    font-size: 0.9em;
-    color: var(--text-light);
-    margin-bottom: 5px;
-}
-
-.goal-input-group input[type="number"],
-.goal-input-group input[type="text"] {
-    width: calc(100% - 20px);
-    padding: 10px;
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
-    background-color: var(--primary-bg);
-    color: var(--text-dark);
-    font-family: 'Inter', sans-serif;
-    font-size: 1em;
+    border-top-left-radius: 20px;
+    border-top-right-radius: 20px;
+    width: 100%;
+    max-width: 500px; /* Match container max-width */
+    padding: 20px;
+    box-shadow: 0 -4px 10px rgba(0, 0, 0, 0.2);
+    transform: translateY(100%);
+    transition: transform 0.3s ease-out;
     box-sizing: border-box;
 }
 
-body.dark-mode .goal-input-group input {
-    background-color: #444444;
+.calculator-overlay.open .calculator-modal {
+    transform: translateY(0);
+}
+
+.calculator-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.close-calculator-button {
+    background: none;
+    border: none;
+    font-size: 2rem;
+    color: var(--text-light);
+    cursor: pointer;
+    margin-left: 10px;
+}
+
+.calculator-display {
+    flex-grow: 1;
+    background-color: var(--primary-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 15px;
+    font-size: 2em;
+    text-align: right;
+    margin-bottom: 15px;
+    box-sizing: border-box;
+    color: var(--text-dark);
+    font-weight: 500;
+    transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+    overflow-x: auto; /* Allow horizontal scrolling for long numbers */
+    white-space: nowrap; /* Prevent line breaks */
+}
+
+.calculator-buttons {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+}
+
+.calc-btn {
+    background-color: var(--primary-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    padding: 15px;
+    font-size: 1.5rem;
+    color: var(--text-dark);
+    cursor: pointer;
+    transition: background-color 0.2s, transform 0.1s;
+    font-weight: 500;
+}
+
+.calc-btn:active {
+    transform: scale(0.95);
+}
+
+.calc-btn.clear {
+    background-color: var(--accent-red);
+    color: white;
+    border-color: var(--accent-red);
+}
+
+.calc-btn.clear:hover {
+    background-color: #d32f2f;
+}
+
+.calc-btn.backspace {
+    background-color: var(--accent-orange);
+    color: white;
+    border-color: var(--accent-orange);
+}
+.calc-btn.backspace:hover {
+    background-color: #fb8c00;
+}
+
+.calc-btn.operator {
+    background-color: var(--accent-blue);
+    color: white;
+    border-color: var(--accent-blue);
+}
+
+.calc-btn.operator:hover {
+    background-color: #1976d2;
+}
+
+.calc-btn.equals {
+    background-color: var(--accent-green);
+    color: white;
+    border-color: var(--accent-green);
+}
+
+.calc-btn.equals:hover {
+    background-color: #388e3c;
+}
+
+.calc-btn.zero {
+    grid-column: span 2;
+}
+
+body.dark-mode .calc-btn {
+    background-color: #4A4A4A;
     border-color: #666666;
     color: var(--text-dark);
 }
 
-.goal-buttons {
-    display: flex;
-    gap: 10px;
+body.dark-mode .calc-btn.clear,
+body.dark-mode .calc-btn.backspace,
+body.dark-mode .calc-btn.operator,
+body.dark-mode .calc-btn.equals {
+    color: white; /* Keep text white for accent buttons in dark mode */
 }
 
-.goal-buttons button {
-    flex: 1;
-    padding: 10px;
-    border-radius: 8px;
-    font-size: 1em;
-    font-weight: 600;
-    cursor: pointer;
-    transition: background-color 0.2s, color 0.2s;
-    border: none;
-}
 
-.goal-buttons .set-goal-button {
-    background-color: var(--accent-blue);
-    color: white;
-}
+/* Media Queries for larger screens (e.g., tablets and desktops) */
+@media (min-width: 768px) {
+    .container {
+        border-radius: 8px;
+        margin-top: 20px;
+        margin-bottom: 20px;
+        min-height: auto; /* Allow height to adjust to content */
+    }
 
-.goal-buttons .set-goal-button:hover {
-    background-color: #1a7ad9;
-}
+    .main-menu-sidebar {
+        /* This would typically be a more complex media query for a persistent sidebar */
+        /* For now, keeping it mobile-first. If a desktop layout is needed, this would change */
+    }
 
-.goal-buttons .clear-goal-button {
-    background-color: var(--border-color);
-    color: var(--text-dark);
-}
+    /* .main-menu-sidebar.open {
+        /* On wider screens, you might want it to be permanently visible */
+        /* left: 0;
+        transform: translateX(0);
+        box-shadow: none;
+        border-right: 1px solid var(--border-color); */
+    }
 
-.goal-buttons .clear-goal-button:hover {
-    background-color: #cccccc;
-}
+    /* Adjust .main-content padding */
+    .main-content {
+        padding-top: 20px;
+        padding-bottom: 20px; /* Reduced if FABs are repositioned or not fixed */
+    }
 
-body.dark-mode .goal-buttons .clear-goal-button {
-    background-color: #555555;
-    color: var(--text-dark);
-}
+    .fab-button {
+        bottom: 30px;
+        right: 30px;
+    }
 
-body.dark-mode .goal-buttons .clear-goal-button:hover {
-    background-color: #666666;
-}
+    .fab-calculator {
+        bottom: 95px;
+    }
 
-.current-goal-display {
-    margin-top: 20px;
-    padding-top: 15px;
-    border-top: 1px dashed var(--border-color);
-    text-align: center;
-}
+    .calculator-modal {
+        position: relative;
+        transform: translateY(0);
+        border-radius: 12px;
+        /* Center for desktop */
+        margin: auto;
+        top: auto;
+        left: auto;
+    }
 
-.current-goal-display p {
-    margin: 5px 0;
-    font-size: 1em;
-    color: var(--text-light);
-}
+    .calculator-overlay {
+        align-items: center; /* Center vertically on desktop */
+    }
 
-.current-goal-display p strong {
-    color: var(--text-dark);
-    font-weight: 600;
-}
-
-#goalProgressText {
-    font-size: 1.2em;
-    font-weight: 700;
-    color: var(--accent-orange);
-    margin-top: 10px;
+    .filter-options-container {
+        width: auto; /* Let content determine width */
+        max-width: 300px; /* Or a specific max-width */
+        margin-left: auto; /* Align to the right */
+        margin-right: 20px;
+    }
 }
