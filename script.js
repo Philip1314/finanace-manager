@@ -1,7 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
     const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQgMFbI8pivLbRpc2nL2Gyoxw47PmXEVxvUDrjr-t86gj4-J3QM8uV7m8iJN9wxlYo3IY5FQqqUICei/pub?output=csv';
-    const GOOGLE_FORM_URL = 'https://docs.google.com/forms/d/e/1FAIpQLSdrDJoOeo264aOn4g2UEh-K-FHpbssBAVmEtOWoW46Q1cwjgg/viewform?usp=header';
-    // SAVINGS_GOAL_KEY is no longer needed for savings page display logic
+    const GOOGLE_FORM_URL = 'https://docs.google.com/forms/d/e/1FAIpQLSdrDJoOeo264aOn4g2UEe-K-FHpbssBAVmEtOWoW46Q1cwjgg/viewform?usp=header';
 
     // --- Pagination Globals ---
     const ITEMS_PER_PAGE = 15;
@@ -53,7 +52,9 @@ document.addEventListener('DOMContentLoaded', () => {
             switch (lowerCaseWhatKind) {
                 case 'salary': icon = '💸'; break;
                 case 'allowance': icon = '🎁'; break;
-                case 'savings': icon = '💰'; break; // Changed from 'savings contribution' to 'savings'
+                case 'savings contribution':
+                case 'savings': // Also handle "savings" as a gain type
+                    icon = '💰'; break;
                 default: icon = '💰'; break;
             }
         } else if (lowerCaseType === 'expenses') {
@@ -63,7 +64,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 case 'online shopping': category = 'Shopping'; icon = '🛍️'; break;
                 case 'transportation': category = 'Transportation'; icon = '🚌'; break;
                 case 'utility bills': category = 'Utility Bills'; icon = '💡'; break;
-                // Removed 'allowance' mapping to 'Misc' for expenses as it could be ambiguous with gains. Default is 'Misc'.
+                case 'savings': // Handle "savings" as an expense type for deductions
+                    icon = '📉'; // A distinct icon for savings deductions
+                    break;
                 default: category = 'Misc'; icon = '✨'; break;
             }
         }
@@ -119,15 +122,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
             let totalExpensesAmount = 0;
             let totalGainsAmount = 0;
-            let totalSavingsAmount = 0;
-            const expenseCategoriesForChart = { Food: 0, Medicines: 0, Shopping: 0, Misc: 0, Transportation: 0, 'Utility Bills': 0 }; // Added more categories
+            let totalSavingsAmount = 0; // This will now track net savings from 'savings' entries
+            const expenseCategoriesForChart = { Food: 0, Medicines: 0, Shopping: 0, Misc: 0, Transportation: 0, 'Utility Bills': 0 };
 
             data.forEach(entry => {
                 const amount = parseFloat(entry.Amount);
                 const entryType = entry.Type ? entry.Type.toLowerCase() : '';
                 const entryWhatKind = entry['What kind?'] ? entry['What kind?'].toLowerCase() : '';
 
-                if (isNaN(amount) || !entryType) { // Removed !entryWhatKind check as it might be empty for some valid entries
+                if (isNaN(amount) || !entryType) {
                     console.warn('Dashboard - Skipping malformed entry:', entry);
                     return;
                 }
@@ -140,9 +143,18 @@ document.addEventListener('DOMContentLoaded', () => {
                     else if (entryWhatKind === 'transportation') expenseCategoriesForChart.Transportation += amount;
                     else if (entryWhatKind === 'utility bills') expenseCategoriesForChart['Utility Bills'] += amount;
                     else expenseCategoriesForChart.Misc += amount;
+
+                    // Deduct from savings if it's an expense marked as 'savings'
+                    if (entryWhatKind === 'savings') {
+                        totalSavingsAmount -= amount;
+                    }
+
                 } else if (entryType === 'gains') {
                     totalGainsAmount += amount;
-                    if (entryWhatKind === 'savings') totalSavingsAmount += amount; // Changed from 'savings contribution' to 'savings'
+                    // Add to totalSavingsAmount if it's a 'savings' or 'savings contribution' gain
+                    if (entryWhatKind === 'savings contribution' || entryWhatKind === 'savings') {
+                        totalSavingsAmount += amount;
+                    }
                 }
             });
 
@@ -175,12 +187,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 progressCircle.style.stroke = progressColor;
             }
 
-            // Update chart logic for potentially more categories
-            const categoryNames = Object.keys(expenseCategoriesForChart).filter(cat => expenseCategoriesForChart[cat] > 0); // Only show categories with expenses
+            const categoryNames = Object.keys(expenseCategoriesForChart).filter(cat => expenseCategoriesForChart[cat] > 0);
             const categoryAmounts = categoryNames.map(cat => expenseCategoriesForChart[cat]);
             const totalCategoryExpenseForChart = categoryAmounts.reduce((sum, amount) => sum + amount, 0);
 
-            // Dynamically update legend percentages - simplified example, you might want all categories in legend
+            // Dynamically update legend percentages
             document.getElementById('foodPct').textContent = `${totalCategoryExpenseForChart > 0 ? Math.round((expenseCategoriesForChart.Food / totalCategoryExpenseForChart) * 100) : 0}%`;
             document.getElementById('medicinesPct').textContent = `${totalCategoryExpenseForChart > 0 ? Math.round((expenseCategoriesForChart.Medicines / totalCategoryExpenseForChart) * 100) : 0}%`;
             document.getElementById('shoppingPct').textContent = `${totalCategoryExpenseForChart > 0 ? Math.round((expenseCategoriesForChart.Shopping / totalCategoryExpenseForChart) * 100) : 0}%`;
@@ -190,21 +201,26 @@ document.addEventListener('DOMContentLoaded', () => {
             const ctx = document.getElementById('expenseChart');
             if (ctx) {
                 if (window.expenseChartInstance) window.expenseChartInstance.destroy();
-                const chartColors = [ // Ensure enough colors if more categories are prominent
-                    getComputedStyle(document.documentElement).getPropertyValue('--accent-green').trim(),
-                    getComputedStyle(document.documentElement).getPropertyValue('--accent-red').trim(),
-                    getComputedStyle(document.documentElement).getPropertyValue('--accent-orange').trim(),
-                    getComputedStyle(document.documentElement).getPropertyValue('--accent-blue').trim(),
-                    getComputedStyle(document.documentElement).getPropertyValue('--accent-purple').trim(), // Added purple
-                    '#FFEB3B', // Yellow
-                ];
+
+                // Explicit color mapping based on category for Chart.js
+                const categoryColorMap = {
+                    'Food': getComputedStyle(document.documentElement).getPropertyValue('--accent-green').trim(),
+                    'Medicines': getComputedStyle(document.documentElement).getPropertyValue('--accent-red').trim(),
+                    'Shopping': getComputedStyle(document.documentElement).getPropertyValue('--accent-orange').trim(),
+                    'Misc': getComputedStyle(document.documentElement).getPropertyValue('--accent-blue').trim(),
+                    'Transportation': getComputedStyle(document.documentElement).getPropertyValue('--accent-purple').trim(),
+                    'Utility Bills': '#FFEB3B', // A distinct yellow for Utility Bills
+                };
+
+                const chartBackgroundColors = categoryNames.map(cat => categoryColorMap[cat] || 'gray'); // Default to gray if category not mapped
+
                 window.expenseChartInstance = new Chart(ctx.getContext('2d'), {
                     type: 'doughnut',
                     data: {
                         labels: categoryNames,
                         datasets: [{
                             data: categoryAmounts,
-                            backgroundColor: chartColors.slice(0, categoryNames.length),
+                            backgroundColor: chartBackgroundColors, // Use the mapped colors
                             borderColor: 'var(--card-bg)',
                             borderWidth: 4,
                         }]
@@ -316,7 +332,7 @@ document.addEventListener('DOMContentLoaded', () => {
             let initialMonth = today.getMonth() + 1;
 
             // Set initial active month button
-            const monthButtons = document.querySelectorAll('.months-nav .month-button');
+            const monthButtons = document.querySelectorAll('.month-button');
             monthButtons.forEach(button => {
                 button.classList.remove('active');
                 if (parseInt(button.dataset.month) === initialMonth) {
@@ -347,7 +363,14 @@ document.addEventListener('DOMContentLoaded', () => {
         if (sortedCategories.includes('Gains')) { prioritized.push('Gains'); sortedCategories.splice(sortedCategories.indexOf('Gains'), 1); }
         if (sortedCategories.includes('Expenses')) { prioritized.push('Expenses'); sortedCategories.splice(sortedCategories.indexOf('Expenses'), 1); }
         
-        prioritized.push(...sortedCategories.filter(cat => !['salary', 'allowance', 'savings'].includes(cat.toLowerCase()))); // Avoid redundant sub-categories if "Gains" is chosen
+        prioritized.push(...sortedCategories.filter(cat => !['salary', 'allowance', 'savings contribution'].includes(cat.toLowerCase()))); // Avoid redundant sub-categories if "Gains" is chosen
+        // Ensure 'Savings' is a filter option for transactions page if it exists
+        if (sortedCategories.includes('Savings')) {
+             if (!prioritized.includes('Savings')) {
+                 prioritized.push('Savings');
+             }
+        }
+
 
         prioritized.forEach(category => {
             if (category) {
@@ -368,26 +391,28 @@ document.addEventListener('DOMContentLoaded', () => {
             const amount = parseFloat(entry.Amount);
             const date = new Date(entry.Date); // CSV Date
             const entryType = entry.Type ? entry.Type.toLowerCase() : '';
-            // const entryWhatKind = entry['What kind?'] ? entry['What kind?'].toLowerCase() : '';
+            const entryWhatKind = entry['What kind?'] ? entry['What kind?'].toLowerCase() : ''; // Get 'What kind?' for filtering
 
             if (isNaN(amount) || isNaN(date.getTime()) || !entryType) { // Check date validity
                 console.warn('Skipping malformed entry:', entry);
                 return false;
             }
 
-            const entryDate = new Date(entry.Date); // Use entry.Date directly
+            const entryDate = new Date(entry.Date);
             entryDate.setHours(0, 0, 0, 0);
 
             if (selectedMonth && !startDate && !endDate && entryDate.getMonth() + 1 !== selectedMonth) return false;
 
             if (selectedCategory) {
                 const lowerCaseSelectedCategory = selectedCategory.toLowerCase();
-                const actualCategoryInEntry = entry['What kind?'] ? entry['What kind?'].toLowerCase() : '';
-                const entryCategoryType = entry.Type ? entry.Type.toLowerCase() : '';
-
-                if (lowerCaseSelectedCategory === 'gains') { if (entryCategoryType !== 'gains') return false; }
-                else if (lowerCaseSelectedCategory === 'expenses') { if (entryCategoryType !== 'expenses') return false; }
-                else if (actualCategoryInEntry !== lowerCaseSelectedCategory && entryCategoryType !== lowerCaseSelectedCategory) return false; // Check against 'What kind?' or main type
+                
+                if (lowerCaseSelectedCategory === 'gains') { 
+                    if (entryType !== 'gains') return false; 
+                } else if (lowerCaseSelectedCategory === 'expenses') { 
+                    if (entryType !== 'expenses') return false; 
+                } else if (entryWhatKind !== lowerCaseSelectedCategory) { // Filter by 'What kind?'
+                    return false; 
+                }
             }
 
             if (startDate && endDate) {
@@ -450,6 +475,9 @@ document.addEventListener('DOMContentLoaded', () => {
                         case 'food': categoryIconDiv.classList.add('category-food'); break;
                         case 'medicines': categoryIconDiv.classList.add('category-medicines'); break;
                         case 'shopping': categoryIconDiv.classList.add('category-shopping'); break;
+                        case 'transportation': categoryIconDiv.classList.add('category-transportation'); break; // Ensure this is styled in CSS
+                        case 'utility bills': categoryIconDiv.classList.add('category-utility-bills'); break; // Ensure this is styled in CSS
+                        case 'savings': categoryIconDiv.classList.add('category-savings-expense'); break; // New class for savings expense
                         default: categoryIconDiv.classList.add('category-misc'); break;
                     }
                 }
@@ -487,7 +515,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // --- Savings Page Specific Logic (savings.html) ---
+    // --- Savings Page Logic (savings.html) ---
     async function updateSavingsPage() {
         if (!document.getElementById('savings-page')) return;
         const totalSavingsAmountSpan = document.getElementById('totalSavingsAmount');
@@ -498,15 +526,24 @@ document.addEventListener('DOMContentLoaded', () => {
             const allData = parseCSV(csv);
 
             let overallTotalSavings = 0;
-            allSavingsDataGlobal = allData.filter(entry => { // Store filtered data globally for pagination
+            // Filter and calculate savings based *only* on 'savings' or 'savings contribution' entries
+            allSavingsDataGlobal = allData.filter(entry => {
                 const amount = parseFloat(entry.Amount);
-                const isSavings = entry.Type && entry.Type.toLowerCase() === 'gains' &&
-                                  entry['What kind?'] && entry['What kind?'].toLowerCase() === 'savings' && // Changed from 'savings contribution' to 'savings'
-                                  !isNaN(amount);
-                if (isSavings) overallTotalSavings += amount;
-                return isSavings;
-            });
+                const entryType = entry.Type ? entry.Type.toLowerCase() : '';
+                const entryWhatKind = entry['What kind?'] ? entry['What kind?'].toLowerCase() : '';
 
+                const isSavingsEntry = (entryWhatKind === 'savings' || entryWhatKind === 'savings contribution') && !isNaN(amount);
+
+                if (isSavingsEntry) {
+                    if (entryType === 'gains') {
+                        overallTotalSavings += amount;
+                    } else if (entryType === 'expenses') {
+                        overallTotalSavings -= amount;
+                    }
+                }
+                return isSavingsEntry; // Only keep these entries for display
+            });
+            
             if (totalSavingsAmountSpan) totalSavingsAmountSpan.textContent = formatCurrency(overallTotalSavings);
             
             currentSavingsPage = 1; // Reset page on initial load/update
@@ -572,15 +609,28 @@ document.addEventListener('DOMContentLoaded', () => {
                 return timeA[2] - timeB[2];
             }).forEach(entry => {
                 const itemDiv = document.createElement('div'); itemDiv.classList.add('transaction-item');
-                const categoryIconDiv = document.createElement('div'); categoryIconDiv.classList.add('transaction-category-icon', 'category-gain');
-                categoryIconDiv.textContent = '💰'; itemDiv.appendChild(categoryIconDiv);
+                const categoryIconDiv = document.createElement('div'); categoryIconDiv.classList.add('transaction-category-icon');
+                const amountSpan = document.createElement('span'); amountSpan.classList.add('transaction-amount');
+
+                if (entry.Type && entry.Type.toLowerCase() === 'gains') {
+                    categoryIconDiv.classList.add('category-gain');
+                    categoryIconDiv.textContent = '💰'; // Money bag for gains
+                    amountSpan.classList.add('gain');
+                } else if (entry.Type && entry.Type.toLowerCase() === 'expenses') {
+                    categoryIconDiv.classList.add('category-expense'); // Or a more specific class if needed for styling
+                    categoryIconDiv.textContent = '📉'; // Downward trend for expenses
+                    amountSpan.classList.add('expense');
+                }
+                itemDiv.appendChild(categoryIconDiv);
+                
                 const detailsDiv = document.createElement('div'); detailsDiv.classList.add('transaction-details');
                 const nameSpan = document.createElement('span'); nameSpan.classList.add('transaction-name');
-                nameSpan.textContent = entry.Description || 'Savings Contribution'; detailsDiv.appendChild(nameSpan);
+                nameSpan.textContent = entry.Description || (entry.Type && entry.Type.toLowerCase() === 'gains' ? 'Savings Contribution' : 'Savings Withdrawal'); 
+                detailsDiv.appendChild(nameSpan);
                 const timeSpan = document.createElement('span'); timeSpan.classList.add('transaction-time');
                 timeSpan.textContent = entry.Time || ''; detailsDiv.appendChild(timeSpan);
                 itemDiv.appendChild(detailsDiv);
-                const amountSpan = document.createElement('span'); amountSpan.classList.add('transaction-amount', 'gain');
+                
                 amountSpan.textContent = formatCurrency(entry.Amount); itemDiv.appendChild(amountSpan);
                 groupDiv.appendChild(itemDiv);
             });
@@ -588,7 +638,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         
         if (paginatedData.length === 0) {
-            savingsListDiv.innerHTML = `<p style="text-align: center; color: var(--text-light); padding: 2rem;">No savings contributions ${totalItems > 0 ? 'on this page.' : 'found.'}</p>`;
+            savingsListDiv.innerHTML = `<p style="text-align: center; color: var(--text-light); padding: 2rem;">No savings contributions or withdrawals ${totalItems > 0 ? 'on this page.' : 'found.'}</p>`;
         }
 
         setupPaginationControls(paginationControlsDiv, totalPages, currentSavingsPage, (newPage) => {
@@ -649,27 +699,23 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     function handleOperator(nextOperator) {
-        if (currentInput === 'Error' && nextOperator) { // If error, pressing an operator might mean user wants to use last good firstOperand
-             if (firstOperand !== null) { // If there was a valid first operand before error
-                currentInput = String(firstOperand); // Restore it
-                waitingForSecondOperand = false; // Allow it to be part of new op
-             } else { // No valid firstOperand, so reset
+        if (currentInput === 'Error' && nextOperator) {
+             if (firstOperand !== null) {
+                currentInput = String(firstOperand);
+                waitingForSecondOperand = false;
+             } else {
                 resetCalculator();
                 updateDisplay();
-                // Operator cannot be processed if no first operand from error state.
                 return;
              }
         }
 
         const inputValue = parseFloat(currentInput);
-        if (isNaN(inputValue)) { // If current input is not a number (e.g. after an error not cleared by digit)
-            // Potentially an error state, or waiting for second operand.
-            // If operator is already set, and waitingForSecondOperand is true, allow changing operator
+        if (isNaN(inputValue)) {
             if (operator && waitingForSecondOperand) {
                  operator = nextOperator;
                  return;
             }
-            // Otherwise, don't proceed if input is NaN
             console.warn("Calculator: Input is NaN, cannot process operator.");
             return;
         }
@@ -684,12 +730,12 @@ document.addEventListener('DOMContentLoaded', () => {
             const result = performCalculation[operator](firstOperand, inputValue);
             if (result === 'Error' || isNaN(result)) {
                 currentInput = 'Error';
-                firstOperand = null; // Reset on error
+                firstOperand = null;
                 operator = null;
-                waitingForSecondOperand = true; // Expect a new start
+                waitingForSecondOperand = true;
             } else {
-                currentInput = String(parseFloat(result.toFixed(7))); // Limit precision
-                firstOperand = parseFloat(currentInput); // Store result as new firstOperand
+                currentInput = String(parseFloat(result.toFixed(7)));
+                firstOperand = parseFloat(currentInput);
             }
         }
         waitingForSecondOperand = true;
@@ -705,7 +751,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const action = target.dataset.action;
 
             if (target.classList.contains('operator')) { handleOperator(action); return; }
-            if (target.classList.contains('decimal')) { inputDecimal('.'); return; } // Use '.' directly
+            if (target.classList.contains('decimal')) { inputDecimal('.'); return; }
             if (action === 'clear') { resetCalculator(); updateDisplay(); return; }
             if (action === 'backspace') {
                 if (currentInput === 'Error') { resetCalculator(); }
@@ -713,17 +759,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 updateDisplay(); return;
             }
             if (action === 'calculate') {
-                if (operator === null || firstOperand === null) return; // Nothing to calculate if no operator or first operand
-                
-                // If waitingForSecondOperand is true, it means an operator was just pressed.
-                // Standard behavior: use currentInput (which might be the first operand again) as second.
-                // e.g., 5 + = should be 5 + 5.
-                // My currentInput is already set correctly before hitting equals if a second number was typed.
-                // If an operator was the last thing pressed, waitingForSecondOperand is true.
-                // inputValue will take currentInput.
+                if (operator === null || firstOperand === null) return;
                 
                 const inputValue = parseFloat(currentInput);
-                if (isNaN(inputValue) && currentInput !== 'Error') { // Handle if currentInput became NaN somehow
+                if (isNaN(inputValue) && currentInput !== 'Error') {
                     currentInput = 'Error';
                     firstOperand = null;
                     operator = null;
@@ -732,21 +771,19 @@ document.addEventListener('DOMContentLoaded', () => {
                     return;
                 }
 
-                if (currentInput === 'Error') return; // Don't calculate if display is Error
+                if (currentInput === 'Error') return;
 
                 let result = performCalculation[operator](firstOperand, inputValue);
                 if (result === 'Error' || isNaN(result)) {
                     currentInput = 'Error';
                 } else {
-                    currentInput = String(parseFloat(result.toFixed(7))); // Limit precision
+                    currentInput = String(parseFloat(result.toFixed(7)));
                 }
-                // After equals, some calculators chain (result becomes firstOperand, new operator can be hit)
-                // Others fully reset. Let's allow chaining for now by setting firstOperand.
-                firstOperand = parseFloat(currentInput); // If not error, result is new firstOperand
+                firstOperand = parseFloat(currentInput);
                 if (currentInput === 'Error') firstOperand = null;
 
-                operator = null; // Clear operator for next independent calculation unless chained
-                waitingForSecondOperand = true; // Ready for new number or new operator (if chaining)
+                operator = null;
+                waitingForSecondOperand = true;
                 updateDisplay();
                 return;
             }
