@@ -56,17 +56,6 @@
                 </div>
             </section>
 
-            <section class="card summary-info-cards">
-                <div class="info-card expenses">
-                    <h3>Total Expenses</h3>
-                    <p id="totalExpensesAmount">₱ 0.00</p>
-                </div>
-                <div class="info-card gains">
-                    <h3>Total Gains</h3>
-                    <p id="totalGainsAmount">₱ 0.00</p>
-                </div>
-            </section>
-
             <section class="card limit-card">
                 <div class="limit-progress-wrapper">
                     <svg class="progress-circle" viewBox="0 0 80 80">
@@ -80,6 +69,16 @@
                     <span class="limit-amount" id="remainingBalanceAmount">₱ 0.00 of ₱ 0.00</span>
                 </div>
                 <a href="transactions.html" class="arrow-link">&gt;</a>
+            </section>
+
+            <section class="card savings-card">
+                <div class="promo-text">
+                    <h2>Current Savings!</h2>
+                    <span class="savings-amount" id="savingsAmount">₱ 0.00</span>
+                    <button class="mask-button" id="maskSavingsButton">Mask</button>
+                    <a href="savings.html" class="view-savings-button">View Savings</a>
+                </div>
+                <img src="https://cdni.iconscout.com/illustration/premium/thumb/saving-money-3483921-2921501.png" alt="Savings Illustration" class="card-illustration">
             </section>
 
             <section class="card transactions-promo-card">
@@ -96,34 +95,37 @@
     <button class="fab-button fab-calculator" id="openCalculatorFab">CALC</button>
 
     <div class="calculator-overlay" id="calculatorOverlay">
-        <div class="calculator">
+        <div class="calculator-card" id="calculatorCard">
             <div class="calculator-header">
+                <h3>Calculator</h3>
                 <button class="close-calculator-button" id="closeCalculatorButton">&times;</button>
             </div>
-            <input type="text" class="calculator-display" id="calculatorDisplay" value="0" disabled>
-            <div class="calculator-buttons">
-                <button class="calc-btn clear" data-action="clear">AC</button>
-                <button class="calc-btn backspace" data-action="backspace">←</button>
-                <button class="calc-btn operator" data-action="divide">/</button>
-                <button class="calc-btn operator" data-action="multiply">*</button>
+            <div class="calculator-body">
+                <input type="text" class="calculator-display" id="calculatorDisplay" value="0" readonly>
+                <div class="calculator-buttons">
+                    <button class="calc-btn clear" data-action="clear">C</button>
+                    <button class="calc-btn backspace" data-action="backspace">←</button>
+                    <button class="calc-btn operator" data-action="divide">/</button>
+                    <button class="calc-btn operator" data-action="multiply">*</button>
 
-                <button class="calc-btn digit">7</button>
-                <button class="calc-btn digit">8</button>
-                <button class="calc-btn digit">9</button>
-                <button class="calc-btn operator" data-action="subtract">-</button>
+                    <button class="calc-btn digit">7</button>
+                    <button class="calc-btn digit">8</button>
+                    <button class="calc-btn digit">9</button>
+                    <button class="calc-btn operator" data-action="subtract">-</button>
 
-                <button class="calc-btn digit">4</button>
-                <button class="calc-btn digit">5</button>
-                <button class="calc-btn digit">6</button>
-                <button class="calc-btn operator" data-action="add">+</button>
+                    <button class="calc-btn digit">4</button>
+                    <button class="calc-btn digit">5</button>
+                    <button class="calc-btn digit">6</button>
+                    <button class="calc-btn operator" data-action="add">+</button>
 
-                <button class="calc-btn digit">1</button>
-                <button class="calc-btn digit">2</button>
-                <button class="calc-btn digit">3</button>
-                <button class="calc-btn equals" data-action="calculate">=</button>
+                    <button class="calc-btn digit">1</button>
+                    <button class="calc-btn digit">2</button>
+                    <button class="calc-btn digit">3</button>
+                    <button class="calc-btn equals" data-action="calculate">=</button>
 
-                <button class="calc-btn digit zero">0</button>
-                <button class="calc-btn decimal" data-action="decimal">.</button>
+                    <button class="calc-btn digit zero">0</button>
+                    <button class="calc-btn decimal" data-action="decimal">.</button>
+                </div>
             </div>
         </div>
     </div>
