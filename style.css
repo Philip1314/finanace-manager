@@ -356,18 +356,12 @@ body {
     padding: 15px 20px;
     min-height: 100px;
     overflow: hidden;
-    /* Added/Modified for better alignment */
-    gap: 15px; /* Space between promo-text and illustration */
 }
 
 .savings-card .promo-text {
     flex-basis: 60%;
-    /* padding-right: 10px; Removed as gap now handles spacing */
+    padding-right: 10px;
     color: inherit; /* Inherit color from parent */
-    /* Ensure text content doesn't force height */
-    display: flex;
-    flex-direction: column;
-    justify-content: center; /* Vertically center text within its column */
 }
 
 .savings-card .promo-text h2 {
@@ -419,17 +413,13 @@ body {
     color: var(--accent-green);
 }
 
-/* Specific adjustments for the savings card illustration */
 .savings-card .card-illustration {
-    width: 100px; /* Fixed width for the image */
-    height: 100px; /* Fixed height to prevent stretching if aspect ratio isn't perfect */
+    width: 100px;
+    height: auto;
     display: block;
     flex-basis: 40%;
     max-width: 120px;
-    object-fit: contain; /* Ensures the image fits within the bounds without being cropped */
-    /* Remove any vertical margin issues */
-    margin: 0;
-    padding: 0;
+    object-fit: contain;
 }
 
 
@@ -443,12 +433,11 @@ body {
     padding: 15px 20px;
     min-height: 100px;
     overflow: hidden; /* Ensure image doesn't overflow card */
-    gap: 15px; /* Added gap here too for consistency */
 }
 
 .promo-text {
     flex-basis: 60%; /* Adjust width for text */
-    /* padding-right: 10px; Removed as gap now handles spacing */
+    padding-right: 10px; /* Space between text and image */
 }
 
 .promo-text h2 {
