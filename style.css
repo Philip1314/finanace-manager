@@ -208,7 +208,7 @@ body {
     align-items: center;
     width: 100%;
     margin-bottom: 15px;
-    padding: 0 10px;
+    padding: 0 10px; /* Adjust as needed */
     box-sizing: border-box;
 }
 
@@ -227,106 +227,21 @@ body {
     color: var(--text-dark);
     cursor: pointer;
     transition: background-color 0.2s, color 0.2s, border-color 0.2s;
-    display: flex;
-    align-items: center;
-    gap: 5px;
 }
 
 .filter-button:hover {
     background-color: #E0E0E0;
 }
-
 body.dark-mode .filter-button {
     background-color: var(--card-bg);
     border-color: var(--border-color);
     color: var(--text-dark);
 }
-
 body.dark-mode .filter-button:hover {
     background-color: #444444;
 }
 
-.filter-button .arrow-down {
-    display: inline-block;
-    width: 0;
-    height: 0;
-    border-left: 4px solid transparent;
-    border-right: 4px solid transparent;
-    border-top: 5px solid var(--text-dark);
-    margin-left: 5px;
-    transition: transform 0.2s ease;
-}
 
-.filter-button.active .arrow-down {
-    transform: rotate(180deg);
-}
-
-/* New Filter Options Container Styling */
-.filter-options-container {
-    background-color: var(--card-bg);
-    border-radius: 12px;
-    padding: 15px 20px; /* Adjusted padding */
-    margin: 0 20px 20px 20px; /* Creates separation */
-    box-shadow: var(--shadow-sm);
-    display: none; /* Hidden by default, shown by JS */
-    width: calc(100% - 40px); /* Adjust width to fit container padding */
-    box-sizing: border-box;
-}
-
-.filter-options-container.open {
-    display: block; /* Show when open */
-}
-
-.filter-group {
-    display: flex;
-    flex-direction: column;
-    margin-bottom: 15px;
-}
-
-.filter-group:last-child {
-    margin-bottom: 0; /* No margin-bottom for the last filter group */
-}
-
-.filter-group label {
-    font-size: 0.9rem;
-    color: var(--text-light);
-    margin-bottom: 8px;
-    font-weight: 500;
-}
-
-.filter-options-container select {
-    width: 100%;
-    padding: 10px 12px;
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
-    background-color: var(--primary-bg);
-    color: var(--text-dark);
-    font-size: 1rem;
-    -webkit-appearance: none; /* Remove default dropdown arrow */
-    -moz-appearance: none;
-    appearance: none;
-    background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20256%20256%22%3E%3Cpath%20fill%3D%22%23666666%22%20d%3D%22M208.56,96.56,128,177.12,47.44,96.56a8,8,0,0,0-11.31,11.31l80,80a8,8,0,0,0,11.31,0l80-80a8,8,0,0,0-11.31-11.31Z%22%3E%3C%2Fpath%3E%3C%2Fsvg%3E'); /* Custom arrow */
-    background-repeat: no-repeat;
-    background-position: right 12px center;
-    background-size: 16px;
-    cursor: pointer;
-    transition: border-color 0.2s, background-color 0.2s;
-}
-
-.filter-options-container select:focus {
-    outline: none;
-    border-color: var(--accent-blue);
-    box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.2);
-}
-
-body.dark-mode .filter-options-container select {
-    background-color: #4A4A4A; /* Darker background for dropdown */
-    border-color: #666666;
-    color: var(--text-dark);
-    background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20256%20256%22%3E%3Cpath%20fill%3D%22%23AAAAAA%22%20d%3D%22M208.56,96.56,128,177.12,47.44,96.56a8,8,0,0,0-11.31,11.31l80,80a8,8,0,0,0,11.31,0l80-80a8,8,0,0,0-11.31-11.31Z%22%3E%3C%2Fpath%3E%3C%2Fsvg%3E'); /* Lighter arrow for dark mode */
-}
-
-/* Chart Specific Styling */
 .chart-container {
     position: relative;
     width: 200px;
@@ -389,7 +304,6 @@ body.dark-mode .filter-options-container select {
 .legend-item .dot.medicines { background-color: var(--accent-red); }
 .legend-item .dot.shopping { background-color: var(--accent-orange); }
 .legend-item .dot.misc { background-color: var(--accent-blue); }
-.legend-item .dot.utility-bills { background-color: #FFEB3B; } /* Matching the chart color */
 
 
 /* Limit Card (Remaining Balance) */
@@ -548,6 +462,7 @@ body.dark-mode .filter-options-container select {
     object-fit: contain;
 }
 
+
 /* Transactions Promo Card */
 .transactions-promo-card {
     background-color: #FFC107;
@@ -557,94 +472,224 @@ body.dark-mode .filter-options-container select {
     color: var(--text-dark);
     padding: 15px 20px;
     min-height: 100px;
-    overflow: hidden; /* Ensure image doesn't overflow */
+    overflow: hidden; /* Ensure image doesn't overflow card */
 }
 
-.transactions-promo-card .promo-text {
-    flex-basis: 60%;
-    padding-right: 10px;
+.promo-text {
+    flex-basis: 60%; /* Adjust width for text */
+    padding-right: 10px; /* Space between text and image */
 }
 
-.transactions-promo-card .promo-text h2 {
+.promo-text h2 {
     font-size: 1.3rem;
     margin-top: 0;
     margin-bottom: 10px;
     font-weight: 600;
 }
 
-.transactions-promo-card .promo-text p {
-    font-size: 0.9rem;
-    margin-bottom: 10px;
-    line-height: 1.4;
-}
-
-.transactions-promo-card .view-transactions-button {
-    background-color: var(--card-bg); /* White background for button */
-    color: var(--text-dark); /* Dark text */
+.promo-text .button {
+    background-color: var(--card-bg);
+    color: var(--text-dark);
     padding: 8px 15px;
     border-radius: 8px;
     text-decoration: none;
     font-weight: 600;
     font-size: 0.95rem;
     box-shadow: var(--shadow-sm);
-    transition: background-color 0.2s, color 0.2s;
+    transition: background-color 0.2s;
 }
 
-.transactions-promo-card .view-transactions-button:hover {
+.promo-text .button:hover {
     background-color: #f0f0f0;
 }
 
-.transactions-promo-card .card-illustration {
-    width: 100px;
-    height: auto;
-    display: block;
-    flex-basis: 40%;
-    max-width: 120px;
-    object-fit: contain;
+.card-illustration {
+    width: 100px; /* Fixed width for the image */
+    height: auto; /* Maintain aspect ratio */
+    display: block; /* Remove extra space below image */
+    flex-basis: 40%; /* Adjust width for image */
+    max-width: 120px; /* A bit more flexible max-width */
+    object-fit: contain; /* Ensure image fits without cropping */
 }
 
-/* Transactions Page Specific Styles */
+
+/* Transactions Page Styles (transactions.html) */
 .months-nav {
     display: flex;
-    justify-content: space-around;
-    padding: 10px 0;
-    background-color: var(--card-bg);
-    border-bottom: 1px solid var(--border-color);
-    margin-bottom: 20px;
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
-    scrollbar-width: none; /* Firefox */
-    -ms-overflow-style: none; /* IE and Edge */
+    padding: 10px 20px;
+    gap: 10px;
+    background-color: var(--card-bg);
+    border-bottom: 1px solid var(--border-color);
+    white-space: nowrap;
+    /* justify-content: flex-start; */ /* Default, or use space-between if few items */
+    align-items: center;
+    transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+/* Scrollbar styling for .months-nav (optional, for browsers that support it) */
+.months-nav::-webkit-scrollbar {
+    height: 6px;
+}
+.months-nav::-webkit-scrollbar-thumb {
+    background-color: var(--border-color);
+    border-radius: 10px;
+}
+body.dark-mode .months-nav::-webkit-scrollbar-thumb {
+    background-color: #555;
 }
 
-.months-nav::-webkit-scrollbar {
-    display: none; /* Chrome, Safari, Opera */
-}
 
 .month-button {
-    background: none;
-    border: none;
+    background-color: var(--primary-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
     padding: 8px 15px;
-    font-size: 1rem;
-    color: var(--text-light);
+    font-size: 0.9rem;
+    color: var(--text-dark);
     cursor: pointer;
-    transition: color 0.2s, font-weight 0.2s;
-    white-space: nowrap; /* Prevent wrapping */
+    transition: background-color 0.2s, border-color 0.2s, color 0.2s;
+    flex-shrink: 0; /* Prevent buttons from shrinking too much */
 }
 
 .month-button.active {
-    color: var(--accent-blue);
-    font-weight: bold;
-    border-bottom: 2px solid var(--accent-blue);
+    background-color: var(--accent-orange);
+    color: white;
+    border-color: var(--accent-orange);
 }
 
-.transactions-list {
-    margin-top: 20px;
-    /* Ensure the list has some bottom margin if pagination is present */
-    .transactions-list:has(+ .pagination-controls) {
-        margin-bottom: 0; /* Remove bottom margin if pagination follows directly */
-    }
+.month-button:hover:not(.active) {
+    background-color: #E0E0E0;
 }
+body.dark-mode .month-button:hover:not(.active) {
+    background-color: #444444;
+}
+
+.transactions-header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 20px;
+    margin-bottom: 10px;
+    padding: 0 20px; /* Ensure consistent padding with lists */
+}
+
+.transactions-header-row h2 {
+    font-size: 1.3rem;
+    margin: 0;
+    font-weight: 600;
+}
+
+.filter-button {
+    background-color: var(--primary-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 8px 15px;
+    font-size: 0.9rem;
+    color: var(--text-dark);
+    cursor: pointer;
+    transition: background-color 0.2s, color 0.2s, border-color 0.2s;
+}
+
+.filter-button:hover {
+    background-color: #E0E0E0;
+}
+body.dark-mode .filter-button:hover {
+    background-color: #444444;
+}
+
+/* New Filter Options Container Styling */
+.filter-options-container {
+    background-color: var(--card-bg);
+    border-radius: 12px;
+    padding: 15px 20px; /* Adjusted padding */
+    margin: 0 20px 20px 20px; /* Creates separation */
+    box-shadow: var(--shadow-sm);
+    display: none; /* Hidden by default, shown by JS */
+    flex-direction: column; /* Stack dropdowns and buttons */
+    gap: 15px; /* Space between filter groups */
+    transition: background-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.filter-dropdown-group,
+.filter-date-group {
+    display: flex;
+    flex-direction: column; /* Stack label and input/select */
+    gap: 8px;
+}
+
+.filter-options-container label {
+    font-size: 0.9rem;
+    color: var(--text-dark);
+    font-weight: 500;
+}
+
+.filter-options-container select,
+.filter-options-container input[type="date"] {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.95rem;
+    color: var(--text-dark);
+    background-color: var(--primary-bg); /* Light background for input/select */
+    box-sizing: border-box; /* Include padding and border in the element's total width and height */
+    -webkit-appearance: none; /* Remove default styling for select */
+    -moz-appearance: none;
+    appearance: none;
+    transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+}
+
+.filter-options-container select {
+    background-image: url('data:image/svg+xml;utf8,<svg fill="%23333333" height="24" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg"><path d="M7 10l5 5 5-5z"/><path d="M0 0h24v24H0z" fill="none"/></svg>'); /* Custom dropdown arrow */
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    padding-right: 30px; /* Make space for the arrow */
+}
+body.dark-mode .filter-options-container select {
+    background-image: url('data:image/svg+xml;utf8,<svg fill="%23E0E0E0" height="24" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg"><path d="M7 10l5 5 5-5z"/><path d="M0 0h24v24H0z" fill="none"/></svg>'); /* White arrow for dark mode */
+}
+
+
+.apply-filters-button,
+.clear-filters-button {
+    background-color: var(--accent-blue);
+    color: white;
+    padding: 10px 15px;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    width: 100%; /* Make buttons full width */
+    margin-top: 5px; /* Small space between them */
+}
+
+.apply-filters-button:hover {
+    background-color: #1976D2; /* Darker blue on hover */
+}
+
+.clear-filters-button {
+    background-color: var(--text-light); /* Different color for clear */
+}
+
+.clear-filters-button:hover {
+    background-color: #555555;
+}
+
+
+/* Transactions List */
+.transactions-list { /* This class is now used by both transactions and savings page lists */
+    margin-top: 10px;
+    padding: 0 20px; /* Padding for the content within the list container */
+}
+/* Ensure transactions list has some bottom margin if pagination is present */
+.transactions-list:has(+ .pagination-controls) {
+    margin-bottom: 0; /* Remove bottom margin if pagination follows directly */
+}
+
 
 .transaction-group {
     margin-bottom: 25px;
@@ -655,48 +700,70 @@ body.dark-mode .filter-options-container select {
     font-weight: bold;
     color: var(--text-dark);
     margin-bottom: 15px;
-    padding-bottom: 8px;
-    border-bottom: 1px dashed var(--border-color);
+    padding-bottom: 5px;
+    border-bottom: 1px solid var(--border-color);
+    transition: color 0.3s ease, border-color 0.3s ease;
 }
 
 .transaction-item {
     display: flex;
     align-items: center;
-    padding: 12px 0;
-    border-bottom: 1px solid var(--border-color);
+    background-color: var(--card-bg);
+    border-radius: 10px;
+    padding: 12px 15px;
+    margin-bottom: 10px;
+    box-shadow: var(--shadow-sm);
+    transition: background-color 0.3s ease, box-shadow 0.3s ease;
 }
 
-.transaction-item:last-child {
-    border-bottom: none;
-}
-
-.transaction-icon {
-    font-size: 1.5rem;
+.transaction-category-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 1.3rem;
     margin-right: 15px;
     flex-shrink: 0;
 }
 
+/* Category icon background colors */
+.transaction-category-icon.category-gain { background-color: #E8F5E9; color: #388E3C; } /* Added text color for light mode */
+.transaction-category-icon.category-food { background-color: #FFF3E0; color: #FFA000; }
+.transaction-category-icon.category-medicines { background-color: #FFEBEE; color: #D32F2F; }
+.transaction-category-icon.category-shopping { background-color: #E3F2FD; color: #1976D2; }
+.transaction-category-icon.category-misc { background-color: #EDE7F6; color: #512DA8; } /* Changed default misc color slightly */
+
+/* Dark mode adjustments for icons */
+body.dark-mode .transaction-category-icon.category-gain { background-color: #388E3C; color: #C8E6C9; } /* Lighter green text for dark bg */
+body.dark-mode .transaction-category-icon.category-food { background-color: #FFA000; color: #FFECB3; }
+body.dark-mode .transaction-category-icon.category-medicines { background-color: #D32F2F; color: #FFCDD2; }
+body.dark-mode .transaction-category-icon.category-shopping { background-color: #1976D2; color: #BBDEFB; }
+body.dark-mode .transaction-category-icon.category-misc { background-color: #512DA8; color: #D1C4E9; }
+
+
 .transaction-details {
     flex-grow: 1;
+    display: flex;
+    flex-direction: column;
 }
 
 .transaction-name {
     font-size: 1rem;
-    color: var(--text-dark);
     font-weight: 500;
-    margin-bottom: 4px;
+    color: var(--text-dark);
 }
 
-.transaction-category {
-    font-size: 0.85rem;
+.transaction-time {
+    font-size: 0.8rem;
     color: var(--text-light);
 }
 
 .transaction-amount {
-    font-size: 1rem;
+    font-size: 1.1rem;
     font-weight: bold;
-    color: var(--text-dark);
-    margin-left: auto;
+    margin-left: 15px;
     flex-shrink: 0;
 }
 
@@ -708,16 +775,261 @@ body.dark-mode .filter-options-container select {
     color: var(--accent-green);
 }
 
+/* Savings Page Specific Styles */
+#savings-page .main-content {
+    padding-top: 0; /* Remove top padding for savings page */
+}
 
-/* Pagination Controls */
+.savings-detail-card { /* This is the top card on savings page */
+    text-align: center;
+    padding: 25px;
+    background-color: var(--accent-blue); /* Changed from accent-blue to a distinct color or keep as is */
+    color: white;
+    box-shadow: var(--shadow-md);
+    margin-bottom: 25px; /* Keep margin, or adjust if list is directly below */
+}
+
+.savings-detail-card h2 {
+    margin-top: 0;
+    font-size: 1.6rem;
+    font-weight: 700;
+}
+
+.savings-detail-card p {
+    font-size: 1.1rem;
+    margin-bottom: 8px;
+}
+
+.savings-detail-card #totalSavingsAmount { /* Removed goal and progressPct styling */
+    font-weight: bold;
+    font-size: 1.2rem;
+}
+
+/* Removed .progress-bar-container, .progress-bar, #editSavingsGoal styles as elements are removed */
+/* Removed .recent-savings-contributions and .contribution-item styles as elements are removed */
+
+
+/* Floating Action Buttons */
+.fab-button {
+    position: fixed;
+    bottom: 25px;
+    right: 25px;
+    background-color: var(--accent-orange);
+    color: white;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    border: none;
+    font-size: 2.5rem; /* For '+' icon */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    box-shadow: var(--shadow-md);
+    transition: background-color 0.2s, transform 0.2s;
+    z-index: 1000;
+}
+
+.fab-button:active {
+    transform: scale(0.95);
+}
+
+/* .fab-button#addTransactionFab { } */ /* Default position, no specific style needed if it's the base */
+
+.fab-button.fab-calculator {
+    bottom: 90px; /* Position above the add transaction button */
+    font-size: 0.9rem; /* Smaller font for "CALC" */
+    /* padding-top: 2px; */ /* Slight adjustment for text centering, may not be needed with flex align */
+    background-color: var(--accent-blue); /* Different color for calculator */
+    line-height: 1; /* Helps center short text like CALC */
+}
+
+/* Calculator Pop-up Styling */
+.calculator-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5); /* Dimmed background */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 2000; /* Above all other content */
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease, visibility 0s 0.3s; /* Delay visibility transition */
+}
+
+.calculator-overlay.active {
+    opacity: 1;
+    visibility: visible;
+    transition: opacity 0.3s ease, visibility 0s 0s;
+}
+
+.calculator-card {
+    background-color: var(--card-bg);
+    border-radius: 12px;
+    box-shadow: var(--shadow-md);
+    width: 90%; /* Max width for mobile */
+    max-width: 320px; /* Fixed width for calculator */
+    padding: 15px;
+    display: flex;
+    flex-direction: column;
+    transform: translateY(20px) scale(0.95); /* Start slightly below center and smaller */
+    transition: transform 0.3s ease, opacity 0.3s ease, background-color 0.3s ease, box-shadow 0.3s ease;
+    opacity: 0; /* Start hidden for transform transition */
+}
+
+.calculator-overlay.active .calculator-card {
+    transform: translateY(0) scale(1); /* Animate to center and full size */
+    opacity: 1;
+}
+
+.calculator-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border-color);
+    transition: border-color 0.3s ease;
+}
+
+.calculator-header h3 {
+    margin: 0;
+    font-size: 1.2rem;
+    color: var(--text-dark);
+}
+
+.close-calculator-button {
+    background: none;
+    border: none;
+    font-size: 1.8rem;
+    color: var(--text-light);
+    cursor: pointer;
+    line-height: 1;
+    padding: 0 5px;
+    transition: color 0.3s ease;
+}
+
+.calculator-display {
+    width: 100%;
+    background-color: var(--primary-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 15px;
+    font-size: 2em;
+    text-align: right;
+    margin-bottom: 15px;
+    box-sizing: border-box;
+    color: var(--text-dark);
+    font-weight: 500;
+    transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+    overflow-x: auto; /* Allow horizontal scrolling for long numbers */
+    white-space: nowrap; /* Prevent line breaks */
+}
+
+.calculator-buttons {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+}
+
+.calc-btn {
+    background-color: var(--primary-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 15px 0; /* Vertical padding, horizontal comes from grid gap mostly */
+    font-size: 1.2em;
+    font-weight: 600;
+    color: var(--text-dark);
+    cursor: pointer;
+    transition: background-color 0.1s ease, transform 0.1s ease, color 0.1s ease, border-color 0.1s ease;
+    display: flex; /* For better content centering if needed */
+    justify-content: center;
+    align-items: center;
+    min-height: 50px; /* Ensure buttons have a decent touch target height */
+}
+
+.calc-btn:active {
+    transform: scale(0.95);
+}
+
+.calc-btn.clear { /* Specificity for clear button */
+    background-color: var(--accent-red) !important; /* Use important if overrides are needed */
+    color: white !important;
+    border-color: var(--accent-red) !important;
+}
+body.dark-mode .calc-btn.clear {
+    background-color: var(--accent-red) !important;
+    border-color: var(--accent-red) !important;
+}
+
+
+.calc-btn.operator { /* Specificity for operator buttons */
+    background-color: var(--accent-blue) !important;
+    color: white !important;
+    border-color: var(--accent-blue) !important;
+}
+body.dark-mode .calc-btn.operator {
+    background-color: var(--accent-blue) !important;
+    border-color: var(--accent-blue) !important;
+}
+
+.calc-btn.equals { /* Specificity for equals button */
+    background-color: var(--accent-orange) !important;
+    color: white !important;
+    border-color: var(--accent-orange) !important;
+    grid-column: span 2; /* Make equals button span two columns */
+}
+body.dark-mode .calc-btn.equals {
+    background-color: var(--accent-orange) !important;
+    border-color: var(--accent-orange) !important;
+}
+
+
+.calc-btn.digit.zero {
+    grid-column: span 2; /* Make zero button span two columns */
+}
+
+.calc-btn:hover:not(:active) { /* General hover, excluding active state */
+    filter: brightness(0.95);
+}
+
+/* Default digit/decimal button styles for dark mode, if not an operator/clear/equals */
+body.dark-mode .calc-btn:not(.clear):not(.operator):not(.equals) {
+    background-color: #4A4A4A; /* Darker background for digits */
+    color: var(--text-dark); /* Light text on dark button */
+    border-color: #666666;
+}
+body.dark-mode .calc-btn:not(.clear):not(.operator):not(.equals):hover:not(:active) {
+    background-color: #5A5A5A; /* Slightly lighter hover for dark mode digits */
+}
+
+
+/* Responsive Adjustments (Optional, for wider screens if needed) */
+@media (min-width: 600px) {
+    .container {
+        /* border-radius: 10px; */ /* Keep it edge-to-edge on mobile, but maybe round on desktop */
+        margin-top: 20px;
+        margin-bottom: 20px;
+    }
+    .main-menu-sidebar { /* Allow sidebar to be permanently visible on wider screens if desired */
+        /* left: 0; transform: translateX(0); box-shadow: none; border-right: 1px solid var(--border-color); */
+    }
+    /* Adjust .main-content padding-left if sidebar is permanent */
+}
+
+/* Pagination Controls Styling - Appended Section */
 .pagination-controls {
     display: flex;
     justify-content: center;
     align-items: center;
-    gap: 8px;
-    margin-top: 20px;
-    padding-top: 10px;
-    border-top: 1px solid var(--border-color);
+    flex-wrap: wrap; /* Allow buttons to wrap on smaller screens */
+    padding: 20px 0; /* Increased padding for better spacing */
+    gap: 8px; /* Space between buttons */
+    margin-bottom: 10px; /* Space below pagination */
 }
 
 .pagination-controls button {
@@ -762,247 +1074,140 @@ body.dark-mode .pagination-controls button:hover:not(:disabled) {
 
 /* Style for ellipsis in pagination */
 .pagination-controls span { /* This targets the span used for "..." */
-    padding: 8px 12px;
+    padding: 8px 12px; /* Match button padding */
     color: var(--text-light);
+    font-size: 0.9rem; /* Match button font size */
+    line-height: normal; /* Adjust if needed to align with buttons */
+    display: inline-flex; /* To align with buttons */
+    align-items: center; /* To align with buttons */
 }
 
-/* FAB - Floating Action Button */
-.fab-button {
-    position: fixed;
-    bottom: 20px;
-    right: 20px;
-    background-color: var(--accent-blue);
-    color: white;
-    border: none;
-    border-radius: 50%;
-    width: 56px;
-    height: 56px;
-    font-size: 2rem;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    cursor: pointer;
-    box-shadow: var(--shadow-md);
-    transition: background-color 0.2s, transform 0.2s;
-    z-index: 1000;
-}
-
-.fab-button:active {
-    transform: scale(0.95);
-}
-
-.fab-calculator {
-    bottom: 85px; /* Position above the add transaction FAB */
-    background-color: var(--accent-orange); /* Different color for calculator */
-    font-size: 1rem;
-    font-weight: bold;
-}
-
-/* Calculator Overlay */
-.calculator-overlay {
+/* Filter Modal Pop-up Styles */
+.filter-modal-overlay {
     position: fixed;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    background-color: rgba(0, 0, 0, 0.5);
+    background-color: rgba(0, 0, 0, 0.5); /* Dimmed background */
     display: flex;
     justify-content: center;
-    align-items: flex-end; /* Align to bottom for mobile */
-    z-index: 2000;
-    visibility: hidden;
+    align-items: center;
+    z-index: 2000; /* Above all other content */
     opacity: 0;
-    transition: visibility 0.3s, opacity 0.3s;
+    visibility: hidden;
+    transition: opacity 0.3s ease, visibility 0s 0.3s; /* Delay visibility transition */
 }
 
-.calculator-overlay.open {
+.filter-modal-overlay.active {
+    opacity: 1;
     visibility: visible;
+    transition: opacity 0.3s ease, visibility 0s 0s;
+}
+
+.filter-modal-card {
+    background-color: var(--card-bg);
+    border-radius: 12px;
+    box-shadow: var(--shadow-md);
+    width: 90%; /* Max width for mobile */
+    max-width: 320px; /* Fixed width for the modal */
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    transform: translateY(20px) scale(0.95); /* Start slightly below center and smaller */
+    transition: transform 0.3s ease, opacity 0.3s ease, background-color 0.3s ease, box-shadow 0.3s ease;
+    opacity: 0; /* Start hidden for transform transition */
+}
+
+.filter-modal-overlay.active .filter-modal-card {
+    transform: translateY(0) scale(1); /* Animate to center and full size */
     opacity: 1;
 }
 
-.calculator-modal {
-    background-color: var(--card-bg);
-    border-top-left-radius: 20px;
-    border-top-right-radius: 20px;
-    width: 100%;
-    max-width: 500px; /* Match container max-width */
-    padding: 20px;
-    box-shadow: 0 -4px 10px rgba(0, 0, 0, 0.2);
-    transform: translateY(100%);
-    transition: transform 0.3s ease-out;
-    box-sizing: border-box;
-}
-
-.calculator-overlay.open .calculator-modal {
-    transform: translateY(0);
-}
-
-.calculator-header {
+.filter-modal-header {
     display: flex;
+    justify-content: space-between;
     align-items: center;
-    margin-bottom: 15px;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border-color);
+    transition: border-color 0.3s ease;
 }
 
-.close-calculator-button {
+.filter-modal-header h3 {
+    margin: 0;
+    font-size: 1.2rem;
+    color: var(--text-dark);
+}
+
+.close-filter-modal-button {
     background: none;
     border: none;
-    font-size: 2rem;
+    font-size: 1.8rem;
     color: var(--text-light);
     cursor: pointer;
-    margin-left: 10px;
+    line-height: 1;
+    padding: 0 5px;
+    transition: color 0.3s ease;
 }
 
-.calculator-display {
-    flex-grow: 1;
-    background-color: var(--primary-bg);
+.filter-modal-body .filter-group {
+    margin-bottom: 15px;
+}
+
+.filter-modal-body label {
+    display: block;
+    font-size: 0.9rem;
+    color: var(--text-light);
+    margin-bottom: 8px;
+}
+
+.filter-modal-body select {
+    width: 100%;
+    padding: 10px 12px;
     border: 1px solid var(--border-color);
     border-radius: 8px;
-    padding: 15px;
-    font-size: 2em;
-    text-align: right;
-    margin-bottom: 15px;
-    box-sizing: border-box;
-    color: var(--text-dark);
-    font-weight: 500;
-    transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
-    overflow-x: auto; /* Allow horizontal scrolling for long numbers */
-    white-space: nowrap; /* Prevent line breaks */
-}
-
-.calculator-buttons {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 10px;
-}
-
-.calc-btn {
     background-color: var(--primary-bg);
-    border: 1px solid var(--border-color);
-    border-radius: 10px;
-    padding: 15px;
-    font-size: 1.5rem;
     color: var(--text-dark);
+    font-size: 1rem;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20256%20256%22%3E%3Cpath%20fill%3D%22%23666666%22%20d%3D%22M208.56,96.56,128,177.12,47.44,96.56a8,8,0,0,0-11.31,11.31l80,80a8,8,0,0,0,11.31,0l80-80a8,8,0,0,0-11.31-11.31Z%22%3E%3C%2Fpath%3E%3C%2Fsvg%3E');
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    background-size: 16px;
     cursor: pointer;
-    transition: background-color 0.2s, transform 0.1s;
-    font-weight: 500;
+    transition: border-color 0.2s, background-color 0.2s;
 }
 
-.calc-btn:active {
-    transform: scale(0.95);
-}
-
-.calc-btn.clear {
-    background-color: var(--accent-red);
-    color: white;
-    border-color: var(--accent-red);
-}
-
-.calc-btn.clear:hover {
-    background-color: #d32f2f;
-}
-
-.calc-btn.backspace {
-    background-color: var(--accent-orange);
-    color: white;
-    border-color: var(--accent-orange);
-}
-.calc-btn.backspace:hover {
-    background-color: #fb8c00;
-}
-
-.calc-btn.operator {
-    background-color: var(--accent-blue);
-    color: white;
+.filter-modal-body select:focus {
+    outline: none;
     border-color: var(--accent-blue);
+    box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.2);
 }
 
-.calc-btn.operator:hover {
-    background-color: #1976d2;
-}
-
-.calc-btn.equals {
-    background-color: var(--accent-green);
-    color: white;
-    border-color: var(--accent-green);
-}
-
-.calc-btn.equals:hover {
-    background-color: #388e3c;
-}
-
-.calc-btn.zero {
-    grid-column: span 2;
-}
-
-body.dark-mode .calc-btn {
+body.dark-mode .filter-modal-body select {
     background-color: #4A4A4A;
     border-color: #666666;
     color: var(--text-dark);
+    background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20256%20256%22%3E%3Cpath%20fill%3D%22%23AAAAAA%22%20d%3D%22M208.56,96.56,128,177.12,47.44,96.56a8,8,0,0,0-11.31,11.31l80,80a8,8,0,0,0,11.31,0l80-80a8,8,0,0,0-11.31-11.31Z%22%3E%3C%2Fpath%3E%3C%2Fsvg%3E');
 }
 
-body.dark-mode .calc-btn.clear,
-body.dark-mode .calc-btn.backspace,
-body.dark-mode .calc-btn.operator,
-body.dark-mode .calc-btn.equals {
-    color: white; /* Keep text white for accent buttons in dark mode */
+.apply-filter-button {
+    background-color: var(--accent-blue);
+    color: white;
+    padding: 10px 15px;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    width: 100%;
+    margin-top: 10px;
 }
 
-
-/* Media Queries for larger screens (e.g., tablets and desktops) */
-@media (min-width: 768px) {
-    .container {
-        border-radius: 8px;
-        margin-top: 20px;
-        margin-bottom: 20px;
-        min-height: auto; /* Allow height to adjust to content */
-    }
-
-    .main-menu-sidebar {
-        /* This would typically be a more complex media query for a persistent sidebar */
-        /* For now, keeping it mobile-first. If a desktop layout is needed, this would change */
-    }
-
-    /* .main-menu-sidebar.open {
-        /* On wider screens, you might want it to be permanently visible */
-        /* left: 0;
-        transform: translateX(0);
-        box-shadow: none;
-        border-right: 1px solid var(--border-color); */
-    }
-
-    /* Adjust .main-content padding */
-    .main-content {
-        padding-top: 20px;
-        padding-bottom: 20px; /* Reduced if FABs are repositioned or not fixed */
-    }
-
-    .fab-button {
-        bottom: 30px;
-        right: 30px;
-    }
-
-    .fab-calculator {
-        bottom: 95px;
-    }
-
-    .calculator-modal {
-        position: relative;
-        transform: translateY(0);
-        border-radius: 12px;
-        /* Center for desktop */
-        margin: auto;
-        top: auto;
-        left: auto;
-    }
-
-    .calculator-overlay {
-        align-items: center; /* Center vertically on desktop */
-    }
-
-    .filter-options-container {
-        width: auto; /* Let content determine width */
-        max-width: 300px; /* Or a specific max-width */
-        margin-left: auto; /* Align to the right */
-        margin-right: 20px;
-    }
+.apply-filter-button:hover {
+    background-color: #1976D2;
 }
