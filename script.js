@@ -1,6 +1,8 @@
 document.addEventListener('DOMContentLoaded', () => {
     const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQgMFbI8pivLbRpc2nL2Gyoxw47PmXEVxvUDrjr-t86gj4-J3QM8uV7m8iJN9wxlYo3IY5FQqqUICei/pub?output=csv';
     const GOOGLE_FORM_URL = 'https://docs.google.com/forms/d/e/1FAIpQLSdrDJoOeo264aOn4g2UEe-K-FHpbssBAVmEtOWoW46Q1cwjgg/viewform?usp=header';
+    const SAVINGS_GOAL_KEY = 'savingsGoal'; // Key for localStorage
+    const SAVINGS_CURRENT_KEY = 'currentSavings'; // Key for current savings in localStorage
 
     // --- Pagination Globals ---
     const ITEMS_PER_PAGE = 15;
@@ -9,6 +11,8 @@ document.addEventListener('DOMContentLoaded', () => {
     let allTransactionsData = []; // Store all fetched data for consistent filtering and pagination
     let allSavingsDataGlobal = []; // Store all fetched savings data for pagination
 
+    // --- Chart Globals ---
+    let expenseChartInstance; // To hold the Chart.js instance
 
     function parseCSV(csv) {
         const lines = csv.split('\n').filter(line => line.trim() !== '');
@@ -20,923 +24,654 @@ document.addEventListener('DOMContentLoaded', () => {
         for (let i = 1; i < lines.length; i++) {
             const values = lines[i].split(',').map(value => value.trim());
             if (values.length !== headers.length) {
-                console.warn('CSV Parse Warning: Skipping malformed row (column mismatch):', lines[i]);
+                console.warn('CSV Parse Warning: Skipping malformed row:', lines[i]);
                 continue;
             }
-            const entry = {};
+            const row = {};
             headers.forEach((header, index) => {
-                entry[header] = values[index];
+                row[header] = values[index];
             });
-            data.push(entry);
+            data.push(row);
         }
         return data;
     }
 
+    async function fetchCSVData() {
+        try {
+            const response = await fetch(CSV_URL);
+            const csv = await response.text();
+            return parseCSV(csv);
+        } catch (error) {
+            console.error('Error fetching CSV:', error);
+            return [];
+        }
+    }
+
+    function formatDate(dateString) {
+        const date = new Date(dateString);
+        if (isNaN(date)) {
+            return 'Invalid Date';
+        }
+        return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+    }
+
     function formatCurrency(amount) {
-        const numAmount = parseFloat(amount);
-        if (isNaN(numAmount)) {
-            return '₱ 0.00';
-        }
-        return `₱ ${numAmount.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+        return `₱ ${parseFloat(amount).toFixed(2)}`;
     }
 
-    function mapCategoryAndIcon(type, whatKind) {
-        let category = 'Misc';
-        let icon = '✨';
-
-        const lowerCaseWhatKind = whatKind ? whatKind.toLowerCase() : '';
-        const lowerCaseType = type ? type.toLowerCase() : '';
-
-        if (lowerCaseType === 'gains') {
-            category = 'Gain';
-            switch (lowerCaseWhatKind) {
-                case 'salary': icon = '💸'; break;
-                case 'allowance': icon = '🎁'; break;
-                case 'savings contribution':
-                case 'savings': // Also handle "savings" as a gain type
-                    icon = '💰'; break;
-                default: icon = '💰'; break;
-            }
-        } else if (lowerCaseType === 'expenses') {
-            switch (lowerCaseWhatKind) {
-                case 'food': case 'groceries': category = 'Food'; icon = '🍔'; break;
-                case 'medicines': category = 'Medicines'; icon = '💊'; break;
-                case 'online shopping': category = 'Shopping'; icon = '🛍️'; break;
-                case 'transportation': category = 'Transportation'; icon = '🚌'; break;
-                case 'utility bills': category = 'Utility Bills'; icon = '💡'; break;
-                case 'savings': // Handle "savings" as an expense type for deductions
-                    icon = '📉'; // A distinct icon for savings deductions
-                    break;
-                default: category = 'Misc'; icon = '✨'; break;
-            }
-        }
-        return { category, icon };
-    }
-
-    // --- Dark Mode Toggle ---
-    const nightModeToggle = document.getElementById('nightModeToggle');
-    const body = document.body;
-    const savedTheme = localStorage.getItem('theme');
-    if (savedTheme) {
-        body.classList.add(savedTheme);
-    } else {
-        body.classList.add('light-mode');
-    }
-    if (nightModeToggle) {
-        nightModeToggle.addEventListener('click', () => {
-            if (body.classList.contains('light-mode')) {
-                body.classList.remove('light-mode');
-                body.classList.add('dark-mode');
-                localStorage.setItem('theme', 'dark-mode');
-            } else {
-                body.classList.remove('dark-mode');
-                body.classList.add('light-mode');
-                localStorage.setItem('theme', 'light-mode');
-            }
-        });
-    }
-
-    // --- Hamburger Menu Logic ---
+    // --- Navigation and Theme ---
     const mainMenuButton = document.getElementById('mainMenuButton');
     const mainMenuSidebar = document.getElementById('mainMenuSidebar');
     const closeSidebarButton = document.getElementById('closeSidebarButton');
-    if (mainMenuButton && mainMenuSidebar && closeSidebarButton) {
-        mainMenuButton.addEventListener('click', () => mainMenuSidebar.classList.add('open'));
-        closeSidebarButton.addEventListener('click', () => mainMenuSidebar.classList.remove('open'));
-        document.addEventListener('click', (event) => {
-            if (mainMenuSidebar.classList.contains('open') &&
-                !mainMenuSidebar.contains(event.target) &&
-                !mainMenuButton.contains(event.target)) {
-                mainMenuSidebar.classList.remove('open');
-            }
+    const nightModeToggle = document.getElementById('nightModeToggle');
+
+    if (mainMenuButton) {
+        mainMenuButton.addEventListener('click', () => {
+            mainMenuSidebar.classList.add('open');
         });
     }
 
-    // --- Dashboard Specific Logic (index.html) ---
-    async function updateDashboard(selectedMonth = null, selectedYear = null) {
-        if (!document.getElementById('dashboard-page')) return;
-
-        // If allTransactionsData is empty, fetch it first
-        if (allTransactionsData.length === 0) {
-            try {
-                const response = await fetch(CSV_URL);
-                const csv = await response.text();
-                allTransactionsData = parseCSV(csv); // Store raw data globally
-                populateYearFilter(allTransactionsData); // Populate years once data is fetched
-            } catch (error) {
-                console.error('Error fetching CSV for dashboard:', error);
-                // Handle errors gracefully
-                return;
-            }
-        }
-
-        let filteredData = allTransactionsData;
-
-        if (selectedMonth || selectedYear) {
-            filteredData = allTransactionsData.filter(entry => {
-                const date = new Date(entry.Date);
-                const entryMonth = date.getMonth() + 1; // getMonth() is 0-indexed
-                const entryYear = date.getFullYear();
-
-                let monthMatch = true;
-                let yearMatch = true;
-
-                if (selectedMonth && selectedMonth !== '') {
-                    monthMatch = (entryMonth === parseInt(selectedMonth));
-                }
-                if (selectedYear && selectedYear !== '') {
-                    yearMatch = (entryYear === parseInt(selectedYear));
-                }
-
-                return monthMatch && yearMatch;
-            });
-        }
-
-
-        let totalExpensesAmount = 0;
-        let totalGainsAmount = 0;
-        let totalSavingsAmount = 0;
-        // Removed 'Transportation' as a distinct category for the chart
-        const expenseCategoriesForChart = { Food: 0, Medicines: 0, Shopping: 0, Misc: 0, 'Utility Bills': 0 };
-
-        filteredData.forEach(entry => {
-            const amount = parseFloat(entry.Amount);
-            const entryType = entry.Type ? entry.Type.toLowerCase() : '';
-            const entryWhatKind = entry['What kind?'] ? entry['What kind?'].toLowerCase() : '';
-
-            if (isNaN(amount) || !entryType) {
-                console.warn('Dashboard - Skipping malformed entry:', entry);
-                return;
-            }
-
-            if (entryType === 'expenses') {
-                totalExpensesAmount += amount;
-                if (entryWhatKind === 'food' || entryWhatKind === 'groceries') expenseCategoriesForChart.Food += amount;
-                else if (entryWhatKind === 'medicines') expenseCategoriesForChart.Medicines += amount;
-                else if (entryWhatKind === 'online shopping') expenseCategoriesForChart.Shopping += amount;
-                // Transportation now falls under 'Misc'
-                else if (entryWhatKind === 'utility bills') expenseCategoriesForChart['Utility Bills'] += amount;
-                else expenseCategoriesForChart.Misc += amount; // This is the fallback for categories not explicitly handled, now includes transportation
-
-                // Deduct from savings if it's an expense marked as 'savings'
-                if (entryWhatKind === 'savings') {
-                    totalSavingsAmount -= amount;
-                }
-
-            } else if (entryType === 'gains') {
-                totalGainsAmount += amount;
-                // Add to totalSavingsAmount if it's a 'savings' or 'savings contribution' gain
-                if (entryWhatKind === 'savings contribution' || entryWhatKind === 'savings') {
-                    totalSavingsAmount += amount;
-                }
-            }
-        });
-
-        document.getElementById('netExpenseValue').textContent = formatCurrency(totalExpensesAmount);
-        const remainingBalance = totalGainsAmount - totalExpensesAmount;
-        const totalIncomeOrBudget = totalGainsAmount;
-        document.getElementById('remainingBalanceAmount').textContent = `${formatCurrency(remainingBalance)} of ${formatCurrency(totalIncomeOrBudget)}`;
-        let remainingBalancePercentage = totalIncomeOrBudget > 0 ? (remainingBalance / totalIncomeOrBudget) * 100 : 0;
-        const displayPercentage = isNaN(remainingBalancePercentage) ? 0 : Math.round(remainingBalancePercentage);
-        document.getElementById('remainingBalancePct').textContent = `${displayPercentage}%`;
-
-        let progressOffset = 0;
-        let progressColor = 'var(--accent-green)';
-        const radius = 34;
-        const circumference = 2 * Math.PI * radius;
-
-        if (displayPercentage >= 100) progressOffset = 0;
-        else if (displayPercentage > 0) {
-            progressOffset = circumference - (displayPercentage / 100) * circumference;
-            if (displayPercentage < 25) progressColor = 'var(--accent-red)';
-            else if (displayPercentage < 50) progressColor = 'var(--accent-orange)';
-        } else {
-            progressOffset = circumference;
-            progressColor = 'var(--accent-red)';
-        }
-        const progressCircle = document.querySelector('.progress-ring-progress');
-        if (progressCircle) {
-            progressCircle.style.strokeDasharray = `${circumference} ${circumference}`;
-            progressCircle.style.strokeDashoffset = progressOffset;
-            progressCircle.style.stroke = progressColor;
-        }
-
-        // Filter category names based on the updated expenseCategoriesForChart
-        const categoryNames = Object.keys(expenseCategoriesForChart).filter(cat => expenseCategoriesForChart[cat] > 0);
-        const categoryAmounts = categoryNames.map(cat => expenseCategoriesForChart[cat]);
-        const totalCategoryExpenseForChart = categoryAmounts.reduce((sum, amount) => sum + amount, 0);
-
-        // Dynamically update legend percentages
-        document.getElementById('foodPct').textContent = `${totalCategoryExpenseForChart > 0 ? Math.round((expenseCategoriesForChart.Food / totalCategoryExpenseForChart) * 100) : 0}%`;
-        document.getElementById('medicinesPct').textContent = `${totalCategoryExpenseForChart > 0 ? Math.round((expenseCategoriesForChart.Medicines / totalCategoryExpenseForChart) * 100) : 0}%`;
-        document.getElementById('shoppingPct').textContent = `${totalCategoryExpenseForChart > 0 ? Math.round((expenseCategoriesForChart.Shopping / totalCategoryExpenseForChart) * 100) : 0}%`;
-        document.getElementById('miscPct').textContent = `${totalCategoryExpenseForChart > 0 ? Math.round((expenseCategoriesForChart.Misc / totalCategoryExpenseForChart) * 100) : 0}%`;
-        // Ensure Utility Bills is also updated
-        document.getElementById('utilityBillsPct').textContent = `${totalCategoryExpenseForChart > 0 ? Math.round((expenseCategoriesForChart['Utility Bills'] / totalCategoryExpenseForChart) * 100) : 0}%`;
-
-
-        const ctx = document.getElementById('expenseChart');
-        if (ctx) {
-            if (window.expenseChartInstance) window.expenseChartInstance.destroy();
-
-            // Explicit color mapping based on category for Chart.js - 'Transportation' removed from here
-            const categoryColorMap = {
-                'Food': getComputedStyle(document.documentElement).getPropertyValue('--accent-green').trim(),
-                'Medicines': getComputedStyle(document.documentElement).getPropertyValue('--accent-red').trim(),
-                'Shopping': getComputedStyle(document.documentElement).getPropertyValue('--accent-orange').trim(),
-                'Misc': getComputedStyle(document.documentElement).getPropertyValue('--accent-blue').trim(),
-                'Utility Bills': '#FFEB3B', // A distinct yellow for Utility Bills
-            };
-
-            const chartBackgroundColors = categoryNames.map(cat => categoryColorMap[cat] || 'gray'); // Default to gray if category not mapped
-
-            window.expenseChartInstance = new Chart(ctx.getContext('2d'), {
-                type: 'doughnut',
-                data: {
-                    labels: categoryNames,
-                    datasets: [{
-                        data: categoryAmounts,
-                        backgroundColor: chartBackgroundColors, // Use the mapped colors
-                        borderColor: 'var(--card-bg)',
-                        borderWidth: 4,
-                    }]
-                },
-                options: {
-                    responsive: true, maintainAspectRatio: false, cutout: '80%',
-                    plugins: { legend: { display: false }, tooltip: { callbacks: { label: (c) => `${c.label}: ${formatCurrency(c.parsed)}` } } }
-                }
-            });
-        }
-        const savingsAmountSpan = document.getElementById('savingsAmount');
-        if (savingsAmountSpan) {
-            savingsAmountSpan.dataset.actualAmount = totalSavingsAmount;
-            savingsAmountSpan.textContent = formatCurrency(totalSavingsAmount);
-        }
-    }
-
-    function populateYearFilter(data) {
-        const yearFilter = document.getElementById('yearFilter');
-        if (!yearFilter) return;
-
-        const years = new Set();
-        data.forEach(entry => {
-            const date = new Date(entry.Date);
-            if (!isNaN(date.getFullYear())) {
-                years.add(date.getFullYear());
-            }
-        });
-
-        // Clear existing options except "All Years"
-        yearFilter.innerHTML = '<option value="">All Years</option>';
-        Array.from(years).sort().forEach(year => {
-            const option = document.createElement('option');
-            option.value = year;
-            option.textContent = year;
-            yearFilter.appendChild(option);
+    if (closeSidebarButton) {
+        closeSidebarButton.addEventListener('click', () => {
+            mainMenuSidebar.classList.remove('open');
         });
     }
 
-    const maskSavingsButton = document.getElementById('maskSavingsButton');
-    if (maskSavingsButton) {
-        maskSavingsButton.addEventListener('click', () => {
-            const savingsAmountSpan = document.getElementById('savingsAmount');
-            if (savingsAmountSpan) {
-                if (savingsAmountSpan.textContent.includes('●')) {
-                    savingsAmountSpan.textContent = formatCurrency(savingsAmountSpan.dataset.actualAmount || 0);
-                    maskSavingsButton.textContent = 'Mask';
-                } else {
-                    savingsAmountSpan.textContent = '₱ ●●●,●●●.●●'; // Adjusted mask
-                    maskSavingsButton.textContent = 'Show';
-                }
-            }
-        });
-    }
-
-    // --- Generic Pagination Setup ---
-    function setupPaginationControls(containerElement, totalPages, currentPage, onPageChangeCallback) {
-        containerElement.innerHTML = ''; // Clear existing controls
-        if (totalPages <= 1) return;
-
-        const createButton = (text, page, isDisabled = false, isActive = false, isEllipsis = false) => {
-            const button = document.createElement(isEllipsis ? 'span' : 'button');
-            button.textContent = text;
-            if (!isEllipsis) {
-                button.disabled = isDisabled;
-                if (isActive) button.classList.add('active');
-                button.addEventListener('click', () => {
-                    if (!isDisabled) onPageChangeCallback(page);
-                });
+    if (nightModeToggle) {
+        nightModeToggle.addEventListener('click', () => {
+            document.body.classList.toggle('dark-mode');
+            // Save preference to localStorage
+            if (document.body.classList.contains('dark-mode')) {
+                localStorage.setItem('theme', 'dark');
             } else {
-                button.style.padding = '8px 12px'; // Match button padding
-                button.style.color = 'var(--text-light)';
+                localStorage.setItem('theme', 'light');
             }
-            return button;
-        };
-
-        // Previous Button
-        containerElement.appendChild(createButton('Previous', currentPage - 1, currentPage === 1));
-
-        // Page Number Buttons (with ellipsis for many pages)
-        const maxPagesToShow = 5; // Max number of direct page buttons
-        if (totalPages <= maxPagesToShow + 2) { // Show all if not too many
-            for (let i = 1; i <= totalPages; i++) {
-                containerElement.appendChild(createButton(i, i, false, i === currentPage));
-            }
-        } else {
-            containerElement.appendChild(createButton(1, 1, false, 1 === currentPage)); // First page
-            if (currentPage > 3) {
-                containerElement.appendChild(createButton('...', 0, false, false, true)); // Ellipsis
-            }
-
-            let startPage = Math.max(2, currentPage - 1);
-            let endPage = Math.min(totalPages - 1, currentPage + 1);
-
-            if (currentPage <= 3) {
-                endPage = Math.min(totalPages -1, maxPagesToShow -1); // Show 1, 2, 3, ..., last
-            }
-            if (currentPage >= totalPages - 2) {
-                startPage = Math.max(2, totalPages - (maxPagesToShow - 2) ); // Show 1, ..., last-2, last-1, last
-            }
-
-
-            for (let i = startPage; i <= endPage; i++) {
-                containerElement.appendChild(createButton(i, i, false, i === currentPage));
-            }
-
-            if (currentPage < totalPages - 2) {
-                 containerElement.appendChild(createButton('...', 0, false, false, true)); // Ellipsis
-            }
-            containerElement.appendChild(createButton(totalPages, totalPages, false, totalPages === currentPage)); // Last page
-        }
-
-        // Next Button
-        containerElement.appendChild(createButton('Next', currentPage + 1, currentPage === totalPages));
-    }
-
-
-    // --- Transactions Page Specific Logic (transactions.html) ---
-    async function fetchAndProcessTransactions() {
-        try {
-            const response = await fetch(CSV_URL);
-            const csv = await response.text();
-            allTransactionsData = parseCSV(csv); // Store raw data globally
-
-            populateCategoryFilter();
-            const today = new Date();
-            let initialMonth = today.getMonth() + 1;
-
-            // Set initial active month button
-            const monthButtons = document.querySelectorAll('.month-button');
-            monthButtons.forEach(button => {
-                button.classList.remove('active');
-                if (parseInt(button.dataset.month) === initialMonth) {
-                    button.classList.add('active');
-                }
-            });
-            currentTransactionsPage = 1; // Reset page for initial load
-            renderTransactions(initialMonth); // Initial render
-        } catch (error) {
-            console.error('Error fetching or processing CSV for transactions:', error);
-            const transactionsListDiv = document.getElementById('transactionsList');
-            if (transactionsListDiv) transactionsListDiv.innerHTML = '<p style="text-align: center; color: var(--accent-red); padding: 2rem;">Error loading transactions.</p>';
-        }
-    }
-
-    function populateCategoryFilter() {
-        const categoryFilterDropdown = document.getElementById('categoryFilterDropdown');
-        if (!categoryFilterDropdown) return;
-        categoryFilterDropdown.innerHTML = '<option value="">All Categories</option>';
-        const uniqueCategories = new Set();
-        allTransactionsData.forEach(entry => {
-            if (entry['What kind?']) uniqueCategories.add(entry['What kind?'].trim());
-            if (entry.Type) uniqueCategories.add(entry.Type.trim()); // Add "Gains" and "Expenses" as main types
-        });
-
-        const sortedCategories = Array.from(uniqueCategories).sort();
-        const prioritized = [];
-        if (sortedCategories.includes('Gains')) { prioritized.push('Gains'); sortedCategories.splice(sortedCategories.indexOf('Gains'), 1); }
-        if (sortedCategories.includes('Expenses')) { prioritized.push('Expenses'); sortedCategories.splice(sortedCategories.indexOf('Expenses'), 1); }
-        
-        prioritized.push(...sortedCategories.filter(cat => !['salary', 'allowance', 'savings contribution'].includes(cat.toLowerCase()))); // Avoid redundant sub-categories if "Gains" is chosen
-        // Ensure 'Savings' is a filter option for transactions page if it exists
-        if (sortedCategories.includes('Savings')) {
-             if (!prioritized.includes('Savings')) {
-                 prioritized.push('Savings');
-             }
-        }
-
-
-        prioritized.forEach(category => {
-            if (category) {
-                const option = document.createElement('option');
-                option.value = category;
-                option.textContent = category;
-                categoryFilterDropdown.appendChild(option);
+            // Re-render chart to update colors
+            if (document.getElementById('dashboard-page') && expenseChartInstance) {
+                updateExpenseChart();
             }
         });
     }
 
-    function renderTransactions(selectedMonth, selectedCategory = '', startDate = null, endDate = null) {
-        const transactionsListDiv = document.getElementById('transactionsList');
-        const paginationControlsDiv = document.getElementById('transactionsPaginationControls');
-        if (!transactionsListDiv || !paginationControlsDiv) return;
-
-        let filteredData = allTransactionsData.filter(entry => {
-            const amount = parseFloat(entry.Amount);
-            const date = new Date(entry.Date); // CSV Date
-            const entryType = entry.Type ? entry.Type.toLowerCase() : '';
-            const entryWhatKind = entry['What kind?'] ? entry['What kind?'].toLowerCase() : '';
-
-            if (isNaN(amount) || isNaN(date.getTime()) || !entryType) { // Check date validity
-                console.warn('Skipping malformed entry:', entry);
-                return false;
-            }
-
-            const entryDate = new Date(entry.Date);
-            entryDate.setHours(0, 0, 0, 0);
-
-            if (selectedMonth && !startDate && !endDate && entryDate.getMonth() + 1 !== selectedMonth) return false;
-
-            if (selectedCategory) {
-                const lowerCaseSelectedCategory = selectedCategory.toLowerCase();
-                
-                if (lowerCaseSelectedCategory === 'gains') { 
-                    if (entryType !== 'gains') return false; 
-                } else if (lowerCaseSelectedCategory === 'expenses') { 
-                    if (entryType !== 'expenses') return false; 
-                } else if (entryWhatKind !== lowerCaseSelectedCategory) { // Filter by 'What kind?'
-                    return false; 
-                }
-            }
-
-            if (startDate && endDate) {
-                const start = new Date(startDate); start.setHours(0, 0, 0, 0);
-                const end = new Date(endDate); end.setHours(23, 59, 59, 999);
-                if (entryDate < start || entryDate > end) return false;
-            }
-            return true;
-        });
-
-        filteredData.sort((a, b) => new Date(b.Date) - new Date(a.Date)); // Sort by date desc
-
-        const totalItems = filteredData.length;
-        const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
-        if (currentTransactionsPage > totalPages && totalPages > 0) currentTransactionsPage = totalPages;
-        if (currentTransactionsPage < 1 && totalPages > 0) currentTransactionsPage = 1;
-        else if (totalPages === 0) currentTransactionsPage = 1;
-
-
-        const startIndex = (currentTransactionsPage - 1) * ITEMS_PER_PAGE;
-        const endIndex = startIndex + ITEMS_PER_PAGE;
-        const paginatedData = filteredData.slice(startIndex, endIndex);
-
-        transactionsListDiv.innerHTML = ''; // Clear previous items
-        const groupedTransactions = {};
-        const today = new Date(); today.setHours(0,0,0,0);
-        const yesterday = new Date(today); yesterday.setDate(today.getDate() - 1);
-
-        paginatedData.forEach(entry => {
-            const entryDate = new Date(entry.Date); entryDate.setHours(0,0,0,0);
-            let dateHeader;
-            if (entryDate.getTime() === today.getTime()) dateHeader = 'Today';
-            else if (entryDate.getTime() === yesterday.getTime()) dateHeader = 'Yesterday';
-            else dateHeader = entryDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
-            if (!groupedTransactions[dateHeader]) groupedTransactions[dateHeader] = [];
-            groupedTransactions[dateHeader].push(entry);
-        });
-
-        Object.keys(groupedTransactions).sort((a,b) => { /* existing sort logic */
-            if (a === 'Today') return -1; if (b === 'Today') return 1;
-            if (a === 'Yesterday') return -1; if (b === 'Yesterday') return 1;
-            return new Date(b) - new Date(a);
-        }).forEach(dateHeader => {
-            const groupDiv = document.createElement('div'); groupDiv.classList.add('transaction-group');
-            const headerDiv = document.createElement('div'); headerDiv.classList.add('transaction-date-header'); headerDiv.textContent = dateHeader;
-            groupDiv.appendChild(headerDiv);
-            groupedTransactions[dateHeader].sort((a,b) => { /* time sort */
-                const timeA = a.Time ? a.Time.split(':').map(Number) : [0,0,0];
-                const timeB = b.Time ? b.Time.split(':').map(Number) : [0,0,0];
-                if(timeA[0] !== timeB[0]) return timeA[0] - timeB[0];
-                if(timeA[1] !== timeB[1]) return timeA[1] - timeB[1];
-                return timeA[2] - timeB[2];
-            }).forEach(entry => {
-                const itemDiv = document.createElement('div'); itemDiv.classList.add('transaction-item');
-                const categoryIconDiv = document.createElement('div'); categoryIconDiv.classList.add('transaction-category-icon');
-                const { category: mappedCategory, icon: categoryIcon } = mapCategoryAndIcon(entry.Type, entry['What kind?']);
-                if (entry.Type.toLowerCase() === 'gains') categoryIconDiv.classList.add('category-gain');
-                else {
-                    switch (mappedCategory.toLowerCase()) {
-                        case 'food': categoryIconDiv.classList.add('category-food'); break;
-                        case 'medicines': categoryIconDiv.classList.add('category-medicines'); break;
-                        case 'shopping': categoryIconDiv.classList.add('category-shopping'); break;
-                        case 'transportation': categoryIconDiv.classList.add('category-transportation'); break; // Ensure this is styled in CSS
-                        case 'utility bills': categoryIconDiv.classList.add('category-utility-bills'); break; // Ensure this is styled in CSS
-                        case 'savings': categoryIconDiv.classList.add('category-savings-expense'); break; // New class for savings expense
-                        default: categoryIconDiv.classList.add('category-misc'); break;
-                    }
-                }
-                categoryIconDiv.textContent = categoryIcon; itemDiv.appendChild(categoryIconDiv);
-                const detailsDiv = document.createElement('div'); detailsDiv.classList.add('transaction-details');
-                const nameSpan = document.createElement('span'); nameSpan.classList.add('transaction-name');
-                nameSpan.textContent = entry.Description || entry['What kind'] || 'N/A'; detailsDiv.appendChild(nameSpan);
-                const timeSpan = document.createElement('span'); timeSpan.classList.add('transaction-time');
-                timeSpan.textContent = entry.Time || ''; detailsDiv.appendChild(timeSpan);
-                itemDiv.appendChild(detailsDiv);
-                const amountSpan = document.createElement('span'); amountSpan.classList.add('transaction-amount');
-                amountSpan.textContent = formatCurrency(entry.Amount);
-                if (entry.Type.toLowerCase() === 'expenses') amountSpan.classList.add('expense');
-                else if (entry.Type.toLowerCase() === 'gains') amountSpan.classList.add('gain');
-                itemDiv.appendChild(amountSpan);
-                groupDiv.appendChild(itemDiv);
-            });
-            transactionsListDiv.appendChild(groupDiv);
-        });
-
-        if (paginatedData.length === 0) {
-            transactionsListDiv.innerHTML = `<p style="text-align: center; color: var(--text-light); padding: 2rem;">No transactions found for ${totalItems > 0 ? 'this page.' : 'the selected filters.'}</p>`;
-        }
-
-        setupPaginationControls(paginationControlsDiv, totalPages, currentTransactionsPage, (newPage) => {
-            currentTransactionsPage = newPage;
-            // Get current filter values to pass them again
-            const currentCat = document.getElementById('categoryFilterDropdown').value;
-            const currentStart = document.getElementById('startDateInput').value;
-            const currentEnd = document.getElementById('endDateInput').value;
-            const activeMonthBtn = document.querySelector('.months-nav .month-button.active');
-            const currentSelMonth = activeMonthBtn ? parseInt(activeMonthBtn.dataset.month) : null;
-            const finalMonthToPass = (currentStart || currentEnd) ? null : currentSelMonth;
-            renderTransactions(finalMonthToPass, currentCat, currentStart, currentEnd);
-        });
+    // Apply saved theme on load
+    if (localStorage.getItem('theme') === 'dark') {
+        document.body.classList.add('dark-mode');
     }
 
-    // --- Savings Page Logic (savings.html) ---
-    async function updateSavingsPage() {
-        if (!document.getElementById('savings-page')) return;
-        const totalSavingsAmountSpan = document.getElementById('totalSavingsAmount');
-
-        try {
-            const response = await fetch(CSV_URL);
-            const csv = await response.text();
-            const allData = parseCSV(csv);
-
-            let overallTotalSavings = 0;
-            // Filter and calculate savings based *only* on 'savings' or 'savings contribution' entries
-            allSavingsDataGlobal = allData.filter(entry => {
-                const amount = parseFloat(entry.Amount);
-                const entryType = entry.Type ? entry.Type.toLowerCase() : '';
-                const entryWhatKind = entry['What kind?'] ? entry['What kind?'].toLowerCase() : '';
-
-                const isSavingsEntry = (entryWhatKind === 'savings' || entryWhatKind === 'savings contribution') && !isNaN(amount);
-
-                if (isSavingsEntry) {
-                    if (entryType === 'gains') {
-                        overallTotalSavings += amount;
-                    } else if (entryType === 'expenses') {
-                        overallTotalSavings -= amount;
-                    }
-                }
-                return isSavingsEntry; // Only keep these entries for display
-            });
-            
-            if (totalSavingsAmountSpan) totalSavingsAmountSpan.textContent = formatCurrency(overallTotalSavings);
-            
-            currentSavingsPage = 1; // Reset page on initial load/update
-            renderSavingsEntries(); // Call render function (it will use allSavingsDataGlobal)
-
-        } catch (error) {
-            console.error('Error fetching or processing CSV for savings page:', error);
-            if (totalSavingsAmountSpan) totalSavingsAmountSpan.textContent = '₱ Error';
-            const savingsListDiv = document.getElementById('savingsTransactionsList');
-            if (savingsListDiv) savingsListDiv.innerHTML = '<p style="text-align: center; color: var(--accent-red); padding: 2rem;">Error loading savings data.</p>';
-        }
-    }
-
-    function renderSavingsEntries() { // Uses global allSavingsDataGlobal and currentSavingsPage
-        const savingsListDiv = document.getElementById('savingsTransactionsList');
-        const paginationControlsDiv = document.getElementById('savingsPaginationControls');
-        if (!savingsListDiv || !paginationControlsDiv) return;
-
-        // Data is already filtered and stored in allSavingsDataGlobal
-        const sortedSavingsData = [...allSavingsDataGlobal].sort((a, b) => new Date(b.Date) - new Date(a.Date));
-
-        const totalItems = sortedSavingsData.length;
-        const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
-        if (currentSavingsPage > totalPages && totalPages > 0) currentSavingsPage = totalPages;
-        if (currentSavingsPage < 1 && totalPages > 0) currentSavingsPage = 1;
-        else if (totalPages === 0) currentSavingsPage = 1;
-
-
-        const startIndex = (currentSavingsPage - 1) * ITEMS_PER_PAGE;
-        const endIndex = startIndex + ITEMS_PER_PAGE;
-        const paginatedData = sortedSavingsData.slice(startIndex, endIndex);
-
-        savingsListDiv.innerHTML = ''; // Clear previous items
-
-        // Grouping and rendering logic (similar to renderTransactions)
-        const groupedTransactions = {};
-        const today = new Date(); today.setHours(0,0,0,0);
-        const yesterday = new Date(today); yesterday.setDate(today.getDate() - 1);
-
-        paginatedData.forEach(entry => {
-            const entryDate = new Date(entry.Date); entryDate.setHours(0,0,0,0);
-            let dateHeader;
-            if (entryDate.getTime() === today.getTime()) dateHeader = 'Today';
-            else if (entryDate.getTime() === yesterday.getTime()) dateHeader = 'Yesterday';
-            else dateHeader = entryDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
-            if (!groupedTransactions[dateHeader]) groupedTransactions[dateHeader] = [];
-            groupedTransactions[dateHeader].push(entry);
-        });
-
-        Object.keys(groupedTransactions).sort((a,b) => {
-             if (a === 'Today') return -1; if (b === 'Today') return 1;
-             if (a === 'Yesterday') return -1; if (b === 'Yesterday') return 1;
-             return new Date(b) - new Date(a); // Sort by date desc
-        }).forEach(dateHeader => {
-            const groupDiv = document.createElement('div'); groupDiv.classList.add('transaction-group');
-            const headerDiv = document.createElement('div'); headerDiv.classList.add('transaction-date-header'); headerDiv.textContent = dateHeader;
-            groupDiv.appendChild(headerDiv);
-            groupedTransactions[dateHeader].sort((a,b) => { /* time sort */
-                const timeA = a.Time ? a.Time.split(':').map(Number) : [0,0,0];
-                const timeB = b.Time ? b.Time.split(':').map(Number) : [0,0,0];
-                if(timeA[0] !== timeB[0]) return timeA[0] - timeB[0];
-                if(timeA[1] !== timeB[1]) return timeA[1] - timeB[1];
-                return timeA[2] - timeB[2];
-            }).forEach(entry => {
-                const itemDiv = document.createElement('div'); itemDiv.classList.add('transaction-item');
-                const categoryIconDiv = document.createElement('div'); categoryIconDiv.classList.add('transaction-category-icon');
-                const amountSpan = document.createElement('span'); amountSpan.classList.add('transaction-amount');
-
-                if (entry.Type && entry.Type.toLowerCase() === 'gains') {
-                    categoryIconDiv.classList.add('category-gain');
-                    categoryIconDiv.textContent = '💰'; // Money bag for gains
-                    amountSpan.classList.add('gain');
-                } else if (entry.Type && entry.Type.toLowerCase() === 'expenses') {
-                    categoryIconDiv.classList.add('category-expense'); // Or a more specific class if needed for styling
-                    categoryIconDiv.textContent = '📉'; // Downward trend for expenses
-                    amountSpan.classList.add('expense');
-                }
-                itemDiv.appendChild(categoryIconDiv);
-                
-                const detailsDiv = document.createElement('div'); detailsDiv.classList.add('transaction-details');
-                const nameSpan = document.createElement('span'); nameSpan.classList.add('transaction-name');
-                nameSpan.textContent = entry.Description || (entry.Type && entry.Type.toLowerCase() === 'gains' ? 'Savings Contribution' : 'Savings Withdrawal'); 
-                detailsDiv.appendChild(nameSpan);
-                const timeSpan = document.createElement('span'); timeSpan.classList.add('transaction-time');
-                timeSpan.textContent = entry.Time || ''; detailsDiv.appendChild(timeSpan);
-                itemDiv.appendChild(detailsDiv);
-                
-                amountSpan.textContent = formatCurrency(entry.Amount); itemDiv.appendChild(amountSpan);
-                groupDiv.appendChild(itemDiv);
-            });
-            savingsListDiv.appendChild(groupDiv);
-        });
-        
-        if (paginatedData.length === 0) {
-            savingsListDiv.innerHTML = `<p style="text-align: center; color: var(--text-light); padding: 2rem;">No savings contributions or withdrawals ${totalItems > 0 ? 'on this page.' : 'found.'}</p>`;
-        }
-
-        setupPaginationControls(paginationControlsDiv, totalPages, currentSavingsPage, (newPage) => {
-            currentSavingsPage = newPage;
-            renderSavingsEntries();
-        });
-    }
-
-
-    // --- Calculator Logic ---
+    // --- Calculator Functionality ---
+    const openCalculatorFab = document.getElementById('openCalculatorFab');
     const calculatorOverlay = document.getElementById('calculatorOverlay');
+    const closeCalculatorButton = document.getElementById('closeCalculatorButton');
     const calculatorDisplay = document.getElementById('calculatorDisplay');
     const calculatorButtons = document.querySelector('.calculator-buttons');
-    const closeCalculatorButton = document.getElementById('closeCalculatorButton');
-    const openCalculatorFab = document.getElementById('openCalculatorFab');
 
     let currentInput = '0';
-    let firstOperand = null;
     let operator = null;
+    let firstOperand = null;
     let waitingForSecondOperand = false;
 
-    function updateDisplay() { if(calculatorDisplay) calculatorDisplay.value = currentInput; }
-    function resetCalculator() {
-        currentInput = '0';
-        firstOperand = null;
-        operator = null;
-        waitingForSecondOperand = false;
+    function updateCalculatorDisplay() {
+        calculatorDisplay.value = currentInput;
     }
 
     function inputDigit(digit) {
-        if (currentInput === 'Error') currentInput = '0'; // Clear error on new digit
         if (waitingForSecondOperand) {
             currentInput = digit;
             waitingForSecondOperand = false;
         } else {
             currentInput = currentInput === '0' ? digit : currentInput + digit;
         }
-        updateDisplay();
+        updateCalculatorDisplay();
     }
 
-    function inputDecimal(dot) {
-        if (currentInput === 'Error') currentInput = '0.'; // Clear error
-        if (waitingForSecondOperand) {
-            currentInput = '0.';
-            waitingForSecondOperand = false;
-            updateDisplay(); return;
+    function inputDecimal() {
+        if (!currentInput.includes('.')) {
+            currentInput += '.';
         }
-        if (!currentInput.includes(dot)) currentInput += dot;
-        updateDisplay();
+        updateCalculatorDisplay();
     }
-
-    // ***** CALCULATOR FIX: Changed keys in performCalculation *****
-    const performCalculation = {
-        'divide': (first, second) => second === 0 ? 'Error' : first / second,
-        'multiply': (first, second) => first * second,
-        'add': (first, second) => first + second,
-        'subtract': (first, second) => first - second,
-    };
 
     function handleOperator(nextOperator) {
-        if (currentInput === 'Error' && nextOperator) {
-             if (firstOperand !== null) {
-                currentInput = String(firstOperand);
-                waitingForSecondOperand = false;
-             } else {
-                resetCalculator();
-                updateDisplay();
-                return;
-             }
-        }
-
         const inputValue = parseFloat(currentInput);
-        if (isNaN(inputValue)) {
-            if (operator && waitingForSecondOperand) {
-                 operator = nextOperator;
-                 return;
-            }
-            console.warn("Calculator: Input is NaN, cannot process operator.");
+
+        if (operator && waitingForSecondOperand) {
+            operator = nextOperator;
             return;
         }
 
-
-        if (operator && waitingForSecondOperand) {
-            operator = nextOperator; return;
-        }
         if (firstOperand === null) {
             firstOperand = inputValue;
         } else if (operator) {
             const result = performCalculation[operator](firstOperand, inputValue);
-            if (result === 'Error' || isNaN(result)) {
-                currentInput = 'Error';
-                firstOperand = null;
-                operator = null;
-                waitingForSecondOperand = true;
-            } else {
-                currentInput = String(parseFloat(result.toFixed(7)));
-                firstOperand = parseFloat(currentInput);
-            }
+            currentInput = String(result);
+            firstOperand = result;
         }
+
         waitingForSecondOperand = true;
         operator = nextOperator;
-        updateDisplay();
+        updateCalculatorDisplay();
     }
 
+    const performCalculation = {
+        '/': (firstOperand, secondOperand) => firstOperand / secondOperand,
+        '*': (firstOperand, secondOperand) => firstOperand * secondOperand,
+        '+': (firstOperand, secondOperand) => firstOperand + secondOperand,
+        '-': (firstOperand, secondOperand) => firstOperand - secondOperand,
+        '=': (firstOperand, secondOperand) => secondOperand // For equals, just return the second operand
+    };
 
-    if (calculatorButtons) {
-        calculatorButtons.addEventListener('click', (event) => {
-            const { target } = event;
-            if (!target.matches('button')) return;
-            const action = target.dataset.action;
+    function resetCalculator() {
+        currentInput = '0';
+        operator = null;
+        firstOperand = null;
+        waitingForSecondOperand = false;
+        updateCalculatorDisplay();
+    }
 
-            if (target.classList.contains('operator')) { handleOperator(action); return; }
-            if (target.classList.contains('decimal')) { inputDecimal('.'); return; }
-            if (action === 'clear') { resetCalculator(); updateDisplay(); return; }
-            if (action === 'backspace') {
-                if (currentInput === 'Error') { resetCalculator(); }
-                else { currentInput = currentInput.length > 1 ? currentInput.slice(0, -1) : '0';}
-                updateDisplay(); return;
-            }
-            if (action === 'calculate') {
-                if (operator === null || firstOperand === null) return;
-                
-                const inputValue = parseFloat(currentInput);
-                if (isNaN(inputValue) && currentInput !== 'Error') {
-                    currentInput = 'Error';
-                    firstOperand = null;
-                    operator = null;
-                    waitingForSecondOperand = true;
-                    updateDisplay();
-                    return;
-                }
-
-                if (currentInput === 'Error') return;
-
-                let result = performCalculation[operator](firstOperand, inputValue);
-                if (result === 'Error' || isNaN(result)) {
-                    currentInput = 'Error';
-                } else {
-                    currentInput = String(parseFloat(result.toFixed(7)));
-                }
-                firstOperand = parseFloat(currentInput);
-                if (currentInput === 'Error') firstOperand = null;
-
-                operator = null;
-                waitingForSecondOperand = true;
-                updateDisplay();
-                return;
-            }
-            if (target.classList.contains('digit')) { inputDigit(target.textContent); }
-        });
+    function backspace() {
+        currentInput = currentInput.slice(0, -1);
+        if (currentInput === '') {
+            currentInput = '0';
+        }
+        updateCalculatorDisplay();
     }
 
     if (openCalculatorFab) {
         openCalculatorFab.addEventListener('click', () => {
-            calculatorOverlay.classList.add('active');
-            resetCalculator(); updateDisplay();
+            calculatorOverlay.classList.add('open');
+            resetCalculator();
         });
     }
-    if (closeCalculatorButton) closeCalculatorButton.addEventListener('click', () => calculatorOverlay.classList.remove('active'));
-    if (calculatorOverlay) calculatorOverlay.addEventListener('click', (event) => { if (event.target === calculatorOverlay) calculatorOverlay.classList.remove('active'); });
 
-    // --- Common Logic & Event Listeners ---
-    const addTransactionFab = document.getElementById('addTransactionFab');
-    if (addTransactionFab) addTransactionFab.addEventListener('click', () => window.open(GOOGLE_FORM_URL, '_blank'));
+    if (closeCalculatorButton) {
+        closeCalculatorButton.addEventListener('click', () => {
+            calculatorOverlay.classList.remove('open');
+        });
+    }
 
-    // Initialize page-specific functions
+    if (calculatorButtons) {
+        calculatorButtons.addEventListener('click', (event) => {
+            const { target } = event;
+            if (!target.matches('button')) {
+                return;
+            }
+
+            if (target.classList.contains('digit')) {
+                inputDigit(target.textContent);
+                return;
+            }
+
+            if (target.classList.contains('decimal')) {
+                inputDecimal();
+                return;
+            }
+
+            if (target.classList.contains('operator')) {
+                handleOperator(target.dataset.action);
+                return;
+            }
+
+            if (target.classList.contains('clear')) {
+                resetCalculator();
+                return;
+            }
+
+            if (target.classList.contains('backspace')) {
+                backspace();
+                return;
+            }
+
+            if (target.classList.contains('equals')) {
+                handleOperator(target.dataset.action); // Process last operation
+                operator = null; // Clear operator after equals
+                waitingForSecondOperand = false;
+                return;
+            }
+        });
+    }
+
+    // --- Dashboard Page Logic ---
     if (document.getElementById('dashboard-page')) {
-        // Dashboard filter elements
-        const dashboardFilterButton = document.getElementById('dashboardFilterButton');
-        const dashboardFilterOptions = document.getElementById('dashboardFilterOptions');
+        const expenseChartCtx = document.getElementById('expenseChart').getContext('2d');
+        const netExpenseValue = document.getElementById('netExpenseValue');
+        const foodPct = document.getElementById('foodPct');
+        const medicinesPct = document.getElementById('medicinesPct');
+        const shoppingPct = document.getElementById('shoppingPct');
+        const miscPct = document.getElementById('miscPct');
+
+        const remainingBalancePct = document.getElementById('remainingBalancePct');
+        const remainingBalanceAmount = document.getElementById('remainingBalanceAmount');
+
+        const savingsAmount = document.getElementById('savingsAmount');
+        const maskSavingsButton = document.getElementById('maskSavingsButton');
+
+        let isSavingsMasked = false; // State for masking savings
+
+        // Filter elements
         const monthFilter = document.getElementById('monthFilter');
         const yearFilter = document.getElementById('yearFilter');
-        const applyDashboardFilterBtn = document.getElementById('applyDashboardFilterBtn');
-        const clearDashboardFilterBtn = document.getElementById('clearDashboardFilterBtn');
 
-        if (dashboardFilterButton) {
-            dashboardFilterButton.addEventListener('click', (event) => {
-                event.stopPropagation(); // Prevent document click from closing it immediately
-                dashboardFilterOptions.classList.toggle('active');
-            });
-            // Close filter options if clicked outside
-            document.addEventListener('click', (event) => {
-                if (dashboardFilterOptions.classList.contains('active') &&
-                    !dashboardFilterOptions.contains(event.target) &&
-                    !dashboardFilterButton.contains(event.target)) {
-                    dashboardFilterOptions.classList.remove('active');
+        function initializeExpenseChart() {
+            expenseChartInstance = new Chart(expenseChartCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Food', 'Medicines', 'Shopping', 'Misc'],
+                    datasets: [{
+                        data: [0, 0, 0, 0], // Initial data
+                        backgroundColor: [
+                            'var(--accent-green)',
+                            'var(--accent-red)',
+                            'var(--accent-orange)',
+                            'var(--accent-blue)'
+                        ],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '80%', // Makes it a donut chart
+                    plugins: {
+                        legend: {
+                            display: false // We'll create a custom legend
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const label = context.label || '';
+                                    const value = context.parsed;
+                                    const total = context.dataset.data.reduce((acc, current) => acc + current, 0);
+                                    const percentage = total > 0 ? ((value / total) * 100).toFixed(0) : 0;
+                                    return `${label}: ${formatCurrency(value)} (${percentage}%)`;
+                                }
+                            }
+                        }
+                    }
                 }
             });
         }
 
-        if (applyDashboardFilterBtn) {
-            applyDashboardFilterBtn.addEventListener('click', () => {
-                const selectedMonth = monthFilter.value;
-                const selectedYear = yearFilter.value;
-                updateDashboard(selectedMonth, selectedYear);
-                dashboardFilterOptions.classList.remove('active'); // Close dropdown after applying
+        function populateYearFilter() {
+            const currentYear = new Date().getFullYear();
+            // Assuming transactions data is fetched, find min/max years
+            // For now, let's hardcode a range or base it on current year
+            const startYear = 2020; // You can adjust this or make it dynamic from data
+            yearFilter.innerHTML = '<option value="">All Years</option>'; // Add "All Years" option
+            for (let year = currentYear; year >= startYear; year--) {
+                const option = document.createElement('option');
+                option.value = year;
+                option.textContent = year;
+                yearFilter.appendChild(option);
+            }
+        }
+
+        function getFilteredTransactionsForDashboard(transactions) {
+            const selectedMonth = monthFilter.value;
+            const selectedYear = yearFilter.value;
+
+            return transactions.filter(transaction => {
+                const transactionDate = new Date(transaction.Date); // Assuming 'Date' is the column name
+                const transactionMonth = transactionDate.getMonth().toString(); // 0-indexed
+                const transactionYear = transactionDate.getFullYear().toString();
+
+                const monthMatch = selectedMonth === "" || transactionMonth === selectedMonth;
+                const yearMatch = selectedYear === "" || transactionYear === selectedYear;
+
+                return monthMatch && yearMatch;
             });
         }
 
-        if (clearDashboardFilterBtn) {
-            clearDashboardFilterBtn.addEventListener('click', () => {
-                monthFilter.value = '';
-                yearFilter.value = '';
-                updateDashboard(); // Call with no arguments to show all data
-                dashboardFilterOptions.classList.remove('active'); // Close dropdown after clearing
+
+        function updateExpenseChart() {
+            if (!expenseChartInstance) {
+                initializeExpenseChart();
+            }
+
+            const filteredTransactions = getFilteredTransactionsForDashboard(allTransactionsData);
+
+            let foodExpense = 0;
+            let medicinesExpense = 0;
+            let shoppingExpense = 0;
+            let miscExpense = 0;
+            let totalGains = 0;
+            let totalExpenses = 0;
+
+            filteredTransactions.forEach(transaction => {
+                const amount = parseFloat(transaction.Amount);
+                if (transaction.Type === 'expense') {
+                    totalExpenses += amount;
+                    switch (transaction.Category) {
+                        case 'Food':
+                            foodExpense += amount;
+                            break;
+                        case 'Medicines':
+                            medicinesExpense += amount;
+                            break;
+                        case 'Shopping':
+                            shoppingExpense += amount;
+                            break;
+                        case 'Misc':
+                            miscExpense += amount;
+                            break;
+                    }
+                } else if (transaction.Type === 'income') {
+                    totalGains += amount;
+                }
+            });
+
+            const netExpense = totalGains - totalExpenses;
+            netExpenseValue.textContent = formatCurrency(netExpense);
+
+            const totalCategoryExpense = foodExpense + medicinesExpense + shoppingExpense + miscExpense;
+
+            // Update chart data
+            expenseChartInstance.data.datasets[0].data = [foodExpense, medicinesExpense, shoppingExpense, miscExpense];
+
+            // Update legend percentages
+            foodPct.textContent = `${((foodExpense / totalCategoryExpense) * 100 || 0).toFixed(0)}%`;
+            medicinesPct.textContent = `${((medicinesExpense / totalCategoryExpense) * 100 || 0).toFixed(0)}%`;
+            shoppingPct.textContent = `${((shoppingExpense / totalCategoryExpense) * 100 || 0).toFixed(0)}%`;
+            miscPct.textContent = `${((miscExpense / totalCategoryExpense) * 100 || 0).toFixed(0)}%`;
+
+            // Update summary info cards
+            document.getElementById('totalExpensesAmount').textContent = formatCurrency(totalExpenses);
+            document.getElementById('totalGainsAmount').textContent = formatCurrency(totalGains);
+
+
+            // Update chart colors based on theme
+            const isDarkMode = document.body.classList.contains('dark-mode');
+            expenseChartInstance.data.datasets[0].backgroundColor = [
+                isDarkMode ? '#4CAF50' : '#4CAF50', // Food
+                isDarkMode ? '#F44336' : '#F44336', // Medicines
+                isDarkMode ? '#FF9800' : '#FF9800', // Shopping
+                isDarkMode ? '#2196F3' : '#2196F3'  // Misc
+            ];
+
+            expenseChartInstance.update();
+        }
+
+        function updateLimitCard() {
+            // This is placeholder logic. You'll need to fetch and calculate actual limit and balance.
+            const totalIncome = allTransactionsData
+                .filter(t => t.Type === 'income')
+                .reduce((sum, t) => sum + parseFloat(t.Amount), 0);
+
+            const totalExpenses = allTransactionsData
+                .filter(t => t.Type === 'expense')
+                .reduce((sum, t) => sum + parseFloat(t.Amount), 0);
+
+            // Assuming 'limit' is based on income or a predefined value
+            const dailyLimit = 1000; // Example daily limit
+            const currentBalance = totalIncome - totalExpenses; // Simplified balance
+
+            // For a more meaningful "remaining balance" in a daily context,
+            // you'd need to filter transactions for the current period (e.g., today)
+            // and have a defined budget/limit.
+
+            // Placeholder: Let's assume remaining balance is income - expenses for the whole period.
+            // Or, if you have a monthly budget, remaining = budget - monthly expenses.
+            const budget = 50000; // Example monthly budget
+            const expensesThisMonth = getFilteredTransactionsForDashboard(allTransactionsData) // Use filtered if you want it context-aware
+                                      .filter(t => t.Type === 'expense' && new Date(t.Date).getMonth() === new Date().getMonth())
+                                      .reduce((sum, t) => sum + parseFloat(t.Amount), 0);
+
+            const remaining = budget - expensesThisMonth;
+            const percentageRemaining = (remaining / budget) * 100;
+
+            remainingBalanceAmount.textContent = `${formatCurrency(remaining)} of ${formatCurrency(budget)}`;
+            remainingBalancePct.textContent = `${Math.max(0, percentageRemaining).toFixed(0)}%`; // Don't show negative percentage
+
+            const circle = document.querySelector('.progress-ring-progress');
+            const radius = circle.r.baseVal.value;
+            const circumference = 2 * Math.PI * radius;
+
+            circle.style.strokeDasharray = `${circumference} ${circumference}`;
+            const offset = circumference - (percentageRemaining / 100) * circumference;
+            circle.style.strokeDashoffset = offset;
+
+            // Change color based on percentage
+            if (percentageRemaining > 50) {
+                circle.style.stroke = 'var(--accent-green)'; // High remaining: green
+            } else if (percentageRemaining > 20) {
+                circle.style.stroke = 'var(--accent-orange)'; // Medium remaining: orange
+            } else {
+                circle.style.stroke = 'var(--accent-red)'; // Low remaining: red
+            }
+        }
+
+
+        function updateSavingsDisplay() {
+            let currentSavings = parseFloat(localStorage.getItem(SAVINGS_CURRENT_KEY)) || 0;
+            if (isSavingsMasked) {
+                savingsAmount.textContent = '****';
+            } else {
+                savingsAmount.textContent = formatCurrency(currentSavings);
+            }
+        }
+
+        if (maskSavingsButton) {
+            maskSavingsButton.addEventListener('click', () => {
+                isSavingsMasked = !isSavingsMasked;
+                maskSavingsButton.textContent = isSavingsMasked ? 'Unmask' : 'Mask';
+                updateSavingsDisplay();
             });
         }
 
-        updateDashboard(); // Initial dashboard update on page load
+        // Initial calls for dashboard
+        fetchCSVData().then(data => {
+            allTransactionsData = data;
+            initializeExpenseChart();
+            populateYearFilter(); // Populate year filter after data is available
+            updateExpenseChart(); // Initial chart render with all data
+            updateLimitCard();
+            updateSavingsDisplay();
+        });
+
+        // Add event listeners for filters
+        monthFilter.addEventListener('change', updateExpenseChart);
+        yearFilter.addEventListener('change', updateExpenseChart);
+
+
     } else if (document.getElementById('transactions-page')) {
-        const filterButton = document.getElementById('filterButton');
+        const transactionsList = document.getElementById('transactionsList');
+        const paginationControls = document.getElementById('paginationControls');
+        const prevPageButton = document.getElementById('prevPage');
+        const nextPageButton = document.getElementById('nextPage');
+        const pageNumbersDiv = document.getElementById('pageNumbers');
+        const transactionFilterButton = document.getElementById('transactionFilterButton');
         const filterOptionsContainer = document.getElementById('filterOptionsContainer');
-        const categoryFilterDropdown = document.getElementById('categoryFilterDropdown');
-        const startDateInput = document.getElementById('startDateInput');
-        const endDateInput = document.getElementById('endDateInput');
-        const applyFiltersButton = document.getElementById('applyFiltersButton');
-        const clearFiltersButton = document.getElementById('clearFiltersButton');
+        const applyFiltersButton = document.getElementById('applyFilters');
+        const clearFiltersButton = document.getElementById('clearFilters');
+        const categoryFilterDropdown = document.getElementById('categoryFilter');
+        const startDateInput = document.getElementById('startDate');
+        const endDateInput = document.getElementById('endDate');
         const monthButtons = document.querySelectorAll('.months-nav .month-button');
 
-        if (filterButton) filterButton.addEventListener('click', () => filterOptionsContainer.style.display = filterOptionsContainer.style.display === 'flex' ? 'none' : 'flex');
-        
-        if (applyFiltersButton) {
-            applyFiltersButton.addEventListener('click', () => {
-                currentTransactionsPage = 1; // Reset page
+
+        let filteredTransactions = []; // To store currently filtered transactions for pagination
+
+        function renderTransactions(month = null) {
+            let dataToRender = allTransactionsData;
+
+            // Apply filters from dropdowns if they are open
+            if (filterOptionsContainer && filterOptionsContainer.style.display === 'flex') {
                 const selectedCategory = categoryFilterDropdown.value;
-                const startDate = startDateInput.value;
-                const endDate = endDateInput.value;
-                monthButtons.forEach(btn => btn.classList.remove('active')); // Clear active month if date range used
-                renderTransactions(null, selectedCategory, startDate, endDate); // Pass null for month if date range
-                filterOptionsContainer.style.display = 'none';
+                const startDate = startDateInput.value ? new Date(startDateInput.value) : null;
+                const endDate = endDateInput.value ? new Date(endDateInput.value) : null;
+
+                dataToRender = dataToRender.filter(transaction => {
+                    const transactionDate = new Date(transaction.Date); // Assuming 'Date' column
+                    const categoryMatch = selectedCategory === '' || transaction.Category === selectedCategory;
+                    const dateMatch = (!startDate || transactionDate >= startDate) && (!endDate || transactionDate <= endDate);
+                    return categoryMatch && dateMatch;
+                });
+            } else if (month !== null) { // Apply month filter if no advanced filters are active
+                dataToRender = allTransactionsData.filter(transaction => {
+                    const transactionDate = new Date(transaction.Date); // Assuming 'Date' column
+                    return transactionDate.getMonth() + 1 === month;
+                });
+            } else { // Default to current month if no filters applied and no specific month passed
+                 const today = new Date();
+                 const currentMonth = today.getMonth() + 1;
+                 dataToRender = allTransactionsData.filter(transaction => {
+                    const transactionDate = new Date(transaction.Date);
+                    return transactionDate.getMonth() + 1 === currentMonth;
+                });
+            }
+
+            filteredTransactions = dataToRender.sort((a, b) => new Date(b.Date) - new Date(a.Date)); // Sort by date desc
+
+            const totalPages = Math.ceil(filteredTransactions.length / ITEMS_PER_PAGE);
+            const startIndex = (currentTransactionsPage - 1) * ITEMS_PER_PAGE;
+            const endIndex = startIndex + ITEMS_PER_PAGE;
+            const transactionsOnPage = filteredTransactions.slice(startIndex, endIndex);
+
+            transactionsList.innerHTML = '';
+            if (transactionsOnPage.length === 0) {
+                transactionsList.innerHTML = '<p style="text-align: center; color: var(--text-light);">No transactions found.</p>';
+            } else {
+                transactionsOnPage.forEach(transaction => {
+                    const transactionItem = document.createElement('div');
+                    transactionItem.classList.add('transaction-item');
+                    transactionItem.innerHTML = `
+                        <div class="transaction-details">
+                            <div class="category-icon ${transaction.Category ? transaction.Category.toLowerCase() : 'misc'}">
+                                ${transaction.Type === 'expense' ? 'E' : 'I'}
+                            </div>
+                            <div class="transaction-info">
+                                <h3>${transaction.Description || 'N/A'}</h3>
+                                <p>${transaction.Category || 'N/A'} - ${formatDate(transaction.Date)}</p>
+                            </div>
+                        </div>
+                        <div class="transaction-amount ${transaction.Type === 'expense' ? 'expense' : 'income'}">
+                            ${formatCurrency(transaction.Amount)}
+                        </div>
+                    `;
+                    transactionsList.appendChild(transactionItem);
+                });
+            }
+            updatePaginationControls(totalPages);
+        }
+
+        function updatePaginationControls(totalPages) {
+            prevPageButton.disabled = currentTransactionsPage === 1;
+            nextPageButton.disabled = currentTransactionsPage === totalPages;
+
+            pageNumbersDiv.innerHTML = '';
+            const maxPageButtons = 5; // Number of page buttons to display
+            let startPage = Math.max(1, currentTransactionsPage - Math.floor(maxPageButtons / 2));
+            let endPage = Math.min(totalPages, startPage + maxPageButtons - 1);
+
+            if (endPage - startPage + 1 < maxPageButtons) {
+                startPage = Math.max(1, endPage - maxPageButtons + 1);
+            }
+
+            if (startPage > 1) {
+                const firstPageBtn = document.createElement('button');
+                firstPageBtn.textContent = '1';
+                firstPageBtn.addEventListener('click', () => { currentTransactionsPage = 1; renderTransactions(); });
+                pageNumbersDiv.appendChild(firstPageBtn);
+                if (startPage > 2) {
+                    const ellipsis = document.createElement('span');
+                    ellipsis.textContent = '...';
+                    pageNumbersDiv.appendChild(ellipsis);
+                }
+            }
+
+            for (let i = startPage; i <= endPage; i++) {
+                const pageButton = document.createElement('button');
+                pageButton.textContent = i;
+                if (i === currentTransactionsPage) {
+                    pageButton.classList.add('active');
+                }
+                pageButton.addEventListener('click', () => {
+                    currentTransactionsPage = i;
+                    renderTransactions();
+                });
+                pageNumbersDiv.appendChild(pageButton);
+            }
+
+            if (endPage < totalPages) {
+                if (endPage < totalPages - 1) {
+                    const ellipsis = document.createElement('span');
+                    ellipsis.textContent = '...';
+                    pageNumbersDiv.appendChild(ellipsis);
+                }
+                const lastPageBtn = document.createElement('button');
+                lastPageBtn.textContent = totalPages;
+                lastPageBtn.addEventListener('click', () => { currentTransactionsPage = totalPages; renderTransactions(); });
+                pageNumbersDiv.appendChild(lastPageBtn);
+            }
+        }
+
+        prevPageButton.addEventListener('click', () => {
+            if (currentTransactionsPage > 1) {
+                currentTransactionsPage--;
+                renderTransactions();
+            }
+        });
+
+        nextPageButton.addEventListener('click', () => {
+            const totalPages = Math.ceil(filteredTransactions.length / ITEMS_PER_PAGE);
+            if (currentTransactionsPage < totalPages) {
+                currentTransactionsPage++;
+                renderTransactions();
+            }
+        });
+
+        function fetchAndProcessTransactions() {
+            fetchCSVData().then(data => {
+                allTransactionsData = data;
+                // Set initial month filter to current month for transactions page
+                const today = new Date();
+                const currentMonth = today.getMonth() + 1;
+                monthButtons.forEach(btn => {
+                    if (parseInt(btn.dataset.month) === currentMonth) {
+                        btn.classList.add('active');
+                    } else {
+                        btn.classList.remove('active');
+                    }
+                });
+                renderTransactions(currentMonth);
             });
         }
+
+        if (transactionFilterButton) {
+            transactionFilterButton.addEventListener('click', () => {
+                if (filterOptionsContainer) {
+                    filterOptionsContainer.style.display = filterOptionsContainer.style.display === 'flex' ? 'none' : 'flex';
+                }
+            });
+        }
+
+        if (applyFiltersButton) {
+            applyFiltersButton.addEventListener('click', () => {
+                currentTransactionsPage = 1; // Reset page on filter apply
+                // Deactivate month buttons
+                monthButtons.forEach(btn => btn.classList.remove('active'));
+                renderTransactions();
+                if(filterOptionsContainer) filterOptionsContainer.style.display = 'none'; // Hide filters after applying
+            });
+        }
+
         if (clearFiltersButton) {
             clearFiltersButton.addEventListener('click', () => {
                 currentTransactionsPage = 1; // Reset page
-                categoryFilterDropdown.value = ''; startDateInput.value = ''; endDateInput.value = '';
-                const today = new Date(); const currentMonth = today.getMonth() + 1;
+                categoryFilterDropdown.value = '';
+                startDateInput.value = '';
+                endDateInput.value = '';
+
+                // Reactivate current month button
+                const today = new Date();
+                const currentMonth = today.getMonth() + 1;
                 monthButtons.forEach(btn => btn.classList.remove('active'));
-                const currentMonthBtn = document.querySelector(`.months-nav .month-button[data-month="${currentMonth}"]`);
+                const currentMonthBtn = document.querySelector(`.months-nav .month-button[data-month=\"${currentMonth}\"]`);
                 if (currentMonthBtn) currentMonthBtn.classList.add('active');
-                renderTransactions(currentMonth);
-                filterOptionsContainer.style.display = 'none';
+                renderTransactions(currentMonth); // Render with current month
+                if(filterOptionsContainer) filterOptionsContainer.style.display = 'none';
             });
         }
+
         monthButtons.forEach(button => {
             button.addEventListener('click', function() {
                 currentTransactionsPage = 1; // Reset page
@@ -944,13 +679,223 @@ document.addEventListener('DOMContentLoaded', () => {
                 this.classList.add('active');
                 const selectedMonth = parseInt(this.dataset.month);
                 // Clear other filters when a month is selected
-                categoryFilterDropdown.value = ''; startDateInput.value = ''; endDateInput.value = '';
+                categoryFilterDropdown.value = '';
+                startDateInput.value = '';
+                endDateInput.value = '';
                 renderTransactions(selectedMonth);
                 if(filterOptionsContainer) filterOptionsContainer.style.display = 'none';
             });
         });
-        fetchAndProcessTransactions(); // Initial fetch and render
+
+        fetchAndProcessTransactions(); // Initial fetch and render for transactions page
+
     } else if (document.getElementById('savings-page')) {
-        updateSavingsPage();
+        const totalSavingsAmountElement = document.getElementById('totalSavingsAmount');
+        const savingsTransactionsList = document.getElementById('savingsTransactionsList');
+        const savingsPaginationControls = document.getElementById('savingsPaginationControls');
+        const savingsPrevPageButton = document.getElementById('savingsPrevPage');
+        const savingsNextPageButton = document.getElementById('savingsNextPage');
+        const savingsPageNumbersDiv = document.getElementById('savingsPageNumbers');
+
+        const savingsGoalInput = document.getElementById('savingsGoalInput');
+        const setGoalButton = document.getElementById('setGoalButton');
+        const clearGoalButton = document.getElementById('clearGoalButton');
+        const currentGoalDisplay = document.getElementById('currentGoalDisplay');
+        const goalAmountDisplay = document.getElementById('goalAmountDisplay');
+        const goalNameDisplay = document.getElementById('goalNameDisplay');
+        const goalProgressText = document.getElementById('goalProgressText');
+
+
+        let currentSavingsGoal = JSON.parse(localStorage.getItem(SAVINGS_GOAL_KEY));
+        let currentSavings = parseFloat(localStorage.getItem(SAVINGS_CURRENT_KEY)) || 0;
+
+        function updateSavingsPage() {
+            totalSavingsAmountElement.textContent = formatCurrency(currentSavings);
+            updateGoalDisplay();
+            renderSavingsTransactions();
+        }
+
+        function renderSavingsTransactions() {
+            // Filter transactions that are 'income' and specifically for savings, or 'expense' that are withdrawals
+            // For now, let's assume all income is 'savings' and all expenses are 'withdrawal' from savings for simplicity.
+            // In a real app, you'd have a 'Savings' category for income/expense
+            const savingsRelatedTransactions = allTransactionsData.filter(t =>
+                t.Type === 'income' || (t.Type === 'expense' && t.Category === 'Savings Withdrawal') // Assuming 'Savings Withdrawal' category
+            ).sort((a, b) => new Date(b.Date) - new Date(a.Date)); // Sort by date desc
+
+
+            allSavingsDataGlobal = savingsRelatedTransactions; // Update global savings data for pagination
+
+            const totalPages = Math.ceil(allSavingsDataGlobal.length / ITEMS_PER_PAGE);
+            const startIndex = (currentSavingsPage - 1) * ITEMS_PER_PAGE;
+            const endIndex = startIndex + ITEMS_PER_PAGE;
+            const transactionsOnPage = allSavingsDataGlobal.slice(startIndex, endIndex);
+
+            savingsTransactionsList.innerHTML = '';
+            if (transactionsOnPage.length === 0) {
+                savingsTransactionsList.innerHTML = '<p style="text-align: center; color: var(--text-light);">No savings transactions recorded.</p>';
+            } else {
+                transactionsOnPage.forEach(transaction => {
+                    const item = document.createElement('div');
+                    item.classList.add('transaction-item'); // Reuse transaction-item styling
+                    item.innerHTML = `
+                        <div class="transaction-details">
+                            <div class="category-icon ${transaction.Type === 'income' ? 'income' : 'misc'}">
+                                ${transaction.Type === 'income' ? '&#8369;' : '&#8369;'}
+                            </div>
+                            <div class="transaction-info">
+                                <h3>${transaction.Description || 'Savings Transaction'}</h3>
+                                <p>${transaction.Type === 'income' ? 'Deposit' : 'Withdrawal'} - ${formatDate(transaction.Date)}</p>
+                            </div>
+                        </div>
+                        <div class="transaction-amount ${transaction.Type === 'income' ? 'income' : 'expense'}">
+                            ${formatCurrency(transaction.Amount)}
+                        </div>
+                    `;
+                    savingsTransactionsList.appendChild(item);
+                });
+            }
+            updateSavingsPaginationControls(totalPages);
+        }
+
+        function updateSavingsPaginationControls(totalPages) {
+            savingsPrevPageButton.disabled = currentSavingsPage === 1;
+            savingsNextPageButton.disabled = currentSavingsPage === totalPages;
+
+            savingsPageNumbersDiv.innerHTML = '';
+            const maxPageButtons = 5;
+            let startPage = Math.max(1, currentSavingsPage - Math.floor(maxPageButtons / 2));
+            let endPage = Math.min(totalPages, startPage + maxPageButtons - 1);
+
+            if (endPage - startPage + 1 < maxPageButtons) {
+                startPage = Math.max(1, endPage - maxPageButtons + 1);
+            }
+
+            if (startPage > 1) {
+                const firstPageBtn = document.createElement('button');
+                firstPageBtn.textContent = '1';
+                firstPageBtn.addEventListener('click', () => { currentSavingsPage = 1; renderSavingsTransactions(); });
+                savingsPageNumbersDiv.appendChild(firstPageBtn);
+                if (startPage > 2) {
+                    const ellipsis = document.createElement('span');
+                    ellipsis.textContent = '...';
+                    savingsPageNumbersDiv.appendChild(ellipsis);
+                }
+            }
+
+            for (let i = startPage; i <= endPage; i++) {
+                const pageButton = document.createElement('button');
+                pageButton.textContent = i;
+                if (i === currentSavingsPage) {
+                    pageButton.classList.add('active');
+                }
+                pageButton.addEventListener('click', () => {
+                    currentSavingsPage = i;
+                    renderSavingsTransactions();
+                });
+                savingsPageNumbersDiv.appendChild(pageButton);
+            }
+
+            if (endPage < totalPages) {
+                if (endPage < totalPages - 1) {
+                    const ellipsis = document.createElement('span');
+                    ellipsis.textContent = '...';
+                    savingsPageNumbersDiv.appendChild(ellipsis);
+                }
+                const lastPageBtn = document.createElement('button');
+                lastPageBtn.textContent = totalPages;
+                lastPageBtn.addEventListener('click', () => { currentSavingsPage = totalPages; renderSavingsTransactions(); });
+                savingsPageNumbersDiv.appendChild(lastPageBtn);
+            }
+        }
+
+        if (savingsPrevPageButton) {
+            savingsPrevPageButton.addEventListener('click', () => {
+                if (currentSavingsPage > 1) {
+                    currentSavingsPage--;
+                    renderSavingsTransactions();
+                }
+            });
+        }
+
+        if (savingsNextPageButton) {
+            savingsNextPageButton.addEventListener('click', () => {
+                const totalPages = Math.ceil(allSavingsDataGlobal.length / ITEMS_PER_PAGE);
+                if (currentSavingsPage < totalPages) {
+                    currentSavingsPage++;
+                    renderSavingsTransactions();
+                }
+            });
+        }
+
+        function updateGoalDisplay() {
+            if (currentSavingsGoal) {
+                goalNameDisplay.textContent = currentSavingsGoal.name;
+                goalAmountDisplay.textContent = formatCurrency(currentSavingsGoal.amount);
+
+                const progress = (currentSavings / currentSavingsGoal.amount) * 100;
+                if (progress >= 100) {
+                    goalProgressText.textContent = `Goal Achieved! You saved ${formatCurrency(currentSavings)}!`;
+                    goalProgressText.style.color = 'var(--accent-green)';
+                } else {
+                    goalProgressText.textContent = `${progress.toFixed(1)}% towards your goal.`;
+                    goalProgressText.style.color = 'var(--accent-orange)';
+                }
+                currentGoalDisplay.style.display = 'block';
+            } else {
+                currentGoalDisplay.style.display = 'none';
+            }
+        }
+
+        if (setGoalButton) {
+            setGoalButton.addEventListener('click', () => {
+                const goalAmount = parseFloat(savingsGoalInput.value);
+                const goalName = document.getElementById('savingsGoalNameInput').value;
+
+                if (isNaN(goalAmount) || goalAmount <= 0) {
+                    alert('Please enter a valid positive amount for your savings goal.');
+                    return;
+                }
+                if (!goalName.trim()) {
+                    alert('Please enter a name for your savings goal.');
+                    return;
+                }
+
+                currentSavingsGoal = { amount: goalAmount, name: goalName };
+                localStorage.setItem(SAVINGS_GOAL_KEY, JSON.stringify(currentSavingsGoal));
+                updateGoalDisplay();
+                savingsGoalInput.value = ''; // Clear input
+                document.getElementById('savingsGoalNameInput').value = '';
+            });
+        }
+
+        if (clearGoalButton) {
+            clearGoalButton.addEventListener('click', () => {
+                localStorage.removeItem(SAVINGS_GOAL_KEY);
+                currentSavingsGoal = null;
+                updateGoalDisplay();
+            });
+        }
+
+        // Initial fetch and render for savings page
+        fetchCSVData().then(data => {
+            allTransactionsData = data; // Load all transactions to calculate total savings
+            // Calculate total savings from income transactions
+            currentSavings = allTransactionsData
+                .filter(t => t.Type === 'income') // Assuming all income contributes to savings or a general fund
+                .reduce((sum, t) => sum + parseFloat(t.Amount), 0);
+            localStorage.setItem(SAVINGS_CURRENT_KEY, currentSavings.toFixed(2)); // Store current savings
+
+            updateSavingsPage();
+        });
     }
+
+    // --- Add Transaction FAB (global) ---
+    const addTransactionFab = document.getElementById('addTransactionFab');
+    if (addTransactionFab) {
+        addTransactionFab.addEventListener('click', () => {
+            window.open(GOOGLE_FORM_URL, '_blank');
+        });
+    }
+
 });
