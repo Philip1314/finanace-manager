@@ -283,6 +283,10 @@ body.dark-mode .filter-button:hover {
     margin-bottom: 15px;
 }
 
+.filter-group:last-child {
+    margin-bottom: 0; /* No margin-bottom for the last filter group */
+}
+
 .filter-group label {
     font-size: 0.9rem;
     color: var(--text-light);
