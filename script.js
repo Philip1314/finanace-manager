@@ -1,6 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
-    const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQgMFbI8pivLbRpc2nL2Gyoxw47PmXEVxvUDrjr-t86gj4-J3QM8uV7m8iJN9wxlYo3IY5FQqqUICei/pub?output=csv';
-    const GOOGLE_FORM_URL = 'https://docs.google.com/forms/d/e/1FAIpQLSdrDJoOeo264aOn4g2UEe-K-FHpbssBAVmEtOWoW46Q1cwjgg/viewform?usp=header';
+    const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQgMFbI8pivLbRpc2nL2Gyoxw47PmXEVxvUDJjr-t86gj4-J3QM8uV7m8iJN9wxlYo3IY5FQqqUICei/pub?output=csv';
+    const GOOGLE_FORM_URL = 'https://docs.google.com/forms/d/e/1FAIpQLSdrDJoOeo264aOn4g2UE-K-FHpbssBAVmEtOWoW46Q1cwjgg/viewform?usp=header';
 
     // --- Pagination Globals ---
     const ITEMS_PER_PAGE = 15;
@@ -188,16 +188,16 @@ document.addEventListener('DOMContentLoaded', () => {
                     else if (entryWhatKind === 'online shopping') expenseCategoriesForChart.Shopping += amount;
                     else expenseCategoriesForChart.Misc += amount; // All other expenses go to Misc
 
-                    // Deduct from savings if it's an expense marked as 'savings'
+                    // Add to totalSavingsAmount if it's an expense marked as 'savings'
                     if (entryWhatKind === 'savings') {
-                        totalSavingsAmount -= amount;
+                        totalSavingsAmount += amount; // Reversed logic: expenses add to savings
                     }
 
                 } else if (entryType === 'gains') {
                     totalGainsAmount += amount;
-                    // Add to totalSavingsAmount if it's a 'savings' or 'savings contribution' gain
+                    // Deduct from totalSavingsAmount if it's a 'savings' or 'savings contribution' gain
                     if (entryWhatKind === 'savings contribution' || entryWhatKind === 'savings') {
-                        totalSavingsAmount += amount;
+                        totalSavingsAmount -= amount; // Reversed logic: gains deduct from savings
                     }
                 }
             });
@@ -617,9 +617,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 if (isSavingsEntry) {
                     if (entryType === 'gains') {
-                        overallTotalSavings += amount;
+                        overallTotalSavings -= amount; // Reversed logic: gains deduct from total savings
                     } else if (entryType === 'expenses') {
-                        overallTotalSavings -= amount;
+                        overallTotalSavings += amount; // Reversed logic: expenses add to total savings
                     }
                 }
                 return isSavingsEntry; // Only keep these entries for display
@@ -696,11 +696,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (entry.Type && entry.Type.toLowerCase() === 'gains') {
                     categoryIconDiv.classList.add('category-gain');
                     categoryIconDiv.textContent = '💰'; // Money bag for gains
-                    amountSpan.classList.add('gain');
+                    amountSpan.classList.add('expense'); // Mark as expense for display given reversed logic
                 } else if (entry.Type && entry.Type.toLowerCase() === 'expenses') {
                     categoryIconDiv.classList.add('category-expense'); // Or a more specific class if needed for styling
                     categoryIconDiv.textContent = '📉'; // Downward trend for expenses
-                    amountSpan.classList.add('expense');
+                    amountSpan.classList.add('gain'); // Mark as gain for display given reversed logic
                 }
                 itemDiv.appendChild(categoryIconDiv);
                 
