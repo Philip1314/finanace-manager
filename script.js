@@ -123,7 +123,8 @@ document.addEventListener('DOMContentLoaded', () => {
             let totalExpensesAmount = 0;
             let totalGainsAmount = 0;
             let totalSavingsAmount = 0; // This will now track net savings from 'savings' entries
-            const expenseCategoriesForChart = { Food: 0, Medicines: 0, Shopping: 0, Misc: 0, Transportation: 0, 'Utility Bills': 0 };
+            // Removed 'Transportation' as a distinct category for the chart
+            const expenseCategoriesForChart = { Food: 0, Medicines: 0, Shopping: 0, Misc: 0, 'Utility Bills': 0 };
 
             data.forEach(entry => {
                 const amount = parseFloat(entry.Amount);
@@ -140,9 +141,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (entryWhatKind === 'food' || entryWhatKind === 'groceries') expenseCategoriesForChart.Food += amount;
                     else if (entryWhatKind === 'medicines') expenseCategoriesForChart.Medicines += amount;
                     else if (entryWhatKind === 'online shopping') expenseCategoriesForChart.Shopping += amount;
-                    else if (entryWhatKind === 'transportation') expenseCategoriesForChart.Transportation += amount;
+                    // Transportation now falls under 'Misc'
                     else if (entryWhatKind === 'utility bills') expenseCategoriesForChart['Utility Bills'] += amount;
-                    else expenseCategoriesForChart.Misc += amount;
+                    else expenseCategoriesForChart.Misc += amount; // This is the fallback for categories not explicitly handled, now includes transportation
 
                     // Deduct from savings if it's an expense marked as 'savings'
                     if (entryWhatKind === 'savings') {
@@ -187,6 +188,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 progressCircle.style.stroke = progressColor;
             }
 
+            // Filter category names based on the updated expenseCategoriesForChart
             const categoryNames = Object.keys(expenseCategoriesForChart).filter(cat => expenseCategoriesForChart[cat] > 0);
             const categoryAmounts = categoryNames.map(cat => expenseCategoriesForChart[cat]);
             const totalCategoryExpenseForChart = categoryAmounts.reduce((sum, amount) => sum + amount, 0);
@@ -202,13 +204,12 @@ document.addEventListener('DOMContentLoaded', () => {
             if (ctx) {
                 if (window.expenseChartInstance) window.expenseChartInstance.destroy();
 
-                // Explicit color mapping based on category for Chart.js
+                // Explicit color mapping based on category for Chart.js - 'Transportation' removed from here
                 const categoryColorMap = {
                     'Food': getComputedStyle(document.documentElement).getPropertyValue('--accent-green').trim(),
                     'Medicines': getComputedStyle(document.documentElement).getPropertyValue('--accent-red').trim(),
                     'Shopping': getComputedStyle(document.documentElement).getPropertyValue('--accent-orange').trim(),
                     'Misc': getComputedStyle(document.documentElement).getPropertyValue('--accent-blue').trim(),
-                    'Transportation': getComputedStyle(document.documentElement).getPropertyValue('--accent-purple').trim(),
                     'Utility Bills': '#FFEB3B', // A distinct yellow for Utility Bills
                 };
 
