@@ -202,6 +202,100 @@ body {
     align-items: center;
 }
 
+.chart-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    margin-bottom: 15px;
+    padding-right: 5px; /* Adjust if needed to align with other elements */
+}
+
+.chart-header h2 {
+    margin: 0;
+    font-size: 1.3rem;
+    font-weight: 600;
+}
+
+/* Filter Dropdown Container for Dashboard */
+.filter-dropdown-container {
+    position: relative;
+    display: inline-block; /* Allows the button and dropdown to be side-by-side naturally */
+}
+
+.filter-dropdown-container .filter-options {
+    position: absolute;
+    top: 100%; /* Position below the button */
+    right: 0; /* Align to the right of the button */
+    background-color: var(--card-bg);
+    border-radius: 8px;
+    box-shadow: var(--shadow-md);
+    padding: 15px;
+    display: none; /* Hidden by default */
+    flex-direction: column;
+    gap: 10px;
+    z-index: 10; /* Ensure it's above other content */
+    min-width: 180px; /* Adjust as needed */
+    border: 1px solid var(--border-color);
+}
+
+.filter-dropdown-container .filter-options.active {
+    display: flex; /* Show when active */
+}
+
+.filter-dropdown-container .filter-select {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.9rem;
+    color: var(--text-dark);
+    background-color: var(--primary-bg);
+    box-sizing: border-box;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    background-image: url('data:image/svg+xml;utf8,<svg fill="%23333333" height="24" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg"><path d="M7 10l5 5 5-5z"/><path d="M0 0h24v24H0z" fill="none"/></svg>');
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    padding-right: 30px;
+    transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+}
+body.dark-mode .filter-dropdown-container .filter-select {
+    background-image: url('data:image/svg+xml;utf8,<svg fill="%23E0E0E0" height="24" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg"><path d="M7 10l5 5 5-5z"/><path d="M0 0h24v24H0z" fill="none"/></svg>');
+}
+
+
+.filter-dropdown-container .filter-apply-btn,
+.filter-dropdown-container .filter-clear-btn {
+    width: 100%;
+    padding: 10px 15px;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.filter-dropdown-container .filter-apply-btn {
+    background-color: var(--accent-blue);
+    color: white;
+}
+.filter-dropdown-container .filter-apply-btn:hover {
+    background-color: #1976D2;
+}
+
+.filter-dropdown-container .filter-clear-btn {
+    background-color: var(--text-light);
+    color: white;
+}
+.filter-dropdown-container .filter-clear-btn:hover {
+    background-color: #555555;
+}
+
+
 .chart-container {
     position: relative;
     width: 200px;
@@ -264,6 +358,8 @@ body {
 .legend-item .dot.medicines { background-color: var(--accent-red); }
 .legend-item .dot.shopping { background-color: var(--accent-orange); }
 .legend-item .dot.misc { background-color: var(--accent-blue); }
+.legend-item .dot.transportation { background-color: var(--accent-purple); } /* Still here for possible future use or if other charts use it, but no longer for donut */
+.legend-item .dot.utility-bills { background-color: #FFEB3B; }
 
 
 /* Limit Card (Remaining Balance) */
@@ -540,6 +636,7 @@ body.dark-mode .month-button:hover:not(.active) {
     font-weight: 600;
 }
 
+/* This is the general filter button, also used by dashboard now, so styling applies to both */
 .filter-button {
     background-color: var(--primary-bg);
     border: 1px solid var(--border-color);
@@ -558,7 +655,7 @@ body.dark-mode .filter-button:hover {
     background-color: #444444;
 }
 
-/* New Filter Options Container Styling */
+/* New Filter Options Container Styling (Transactions Page) */
 .filter-options-container {
     background-color: var(--card-bg);
     border-radius: 12px;
@@ -694,6 +791,11 @@ body.dark-mode .filter-options-container select {
 .transaction-category-icon.category-medicines { background-color: #FFEBEE; color: #D32F2F; }
 .transaction-category-icon.category-shopping { background-color: #E3F2FD; color: #1976D2; }
 .transaction-category-icon.category-misc { background-color: #EDE7F6; color: #512DA8; } /* Changed default misc color slightly */
+/* Transportation icon color if it needs to be distinct in transaction list */
+.transaction-category-icon.category-transportation { background-color: #F3E5F5; color: #7B1FA2; }
+.transaction-category-icon.category-utility-bills { background-color: #FFFDE7; color: #FBC02D; }
+.transaction-category-icon.category-savings-expense { background-color: #E0F2F7; color: #0288D1; } /* New class for savings expense */
+
 
 /* Dark mode adjustments for icons */
 body.dark-mode .transaction-category-icon.category-gain { background-color: #388E3C; color: #C8E6C9; } /* Lighter green text for dark bg */
@@ -701,6 +803,9 @@ body.dark-mode .transaction-category-icon.category-food { background-color: #FFA
 body.dark-mode .transaction-category-icon.category-medicines { background-color: #D32F2F; color: #FFCDD2; }
 body.dark-mode .transaction-category-icon.category-shopping { background-color: #1976D2; color: #BBDEFB; }
 body.dark-mode .transaction-category-icon.category-misc { background-color: #512DA8; color: #D1C4E9; }
+body.dark-mode .transaction-category-icon.category-transportation { background-color: #7B1FA2; color: #E1BEE7; }
+body.dark-mode .transaction-category-icon.category-utility-bills { background-color: #FBC02D; color: #FFF9C4; }
+body.dark-mode .transaction-category-icon.category-savings-expense { background-color: #0288D1; color: #B3E5FC; }
 
 
 .transaction-details {
