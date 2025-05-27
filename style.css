@@ -418,6 +418,23 @@ body.dark-mode .filter-button:hover {
     font-weight: bold;
     margin-bottom: 10px;
 }
+/* This is where the new styles are added/modified */
+.savings-card .promo-text .amount-and-button-wrapper {
+    display: flex;
+    align-items: center; /* Align items vertically in the middle */
+    gap: 10px; /* Space between amount and show button */
+    margin-bottom: 10px; /* Space before view savings button */
+    flex-wrap: wrap; /* Allow wrapping on very small screens */
+    justify-content: flex-start; /* Align to start for consistency */
+}
+
+.savings-card .promo-text .amount-and-button-wrapper .savings-amount {
+    margin: 0; /* Remove existing margin to prevent double spacing */
+    flex-grow: 1; /* Allow amount to take available space */
+    min-width: 0; /* Allow it to shrink if needed */
+    word-break: break-word; /* Ensure text breaks */
+    overflow-wrap: break-word;
+}
 
 .savings-card .mask-button {
     background-color: rgba(255, 255, 255, 0.2); /* Slightly transparent white */
@@ -428,8 +445,10 @@ body.dark-mode .filter-button:hover {
     font-weight: 500;
     font-size: 0.85rem;
     cursor: pointer;
-    margin-right: 10px;
+    /* Removed margin-right: 10px; as gap handles spacing */
     transition: background-color 0.2s;
+    flex-shrink: 0; /* Prevent button from shrinking */
+    min-width: fit-content; /* Ensure button content doesn't break */
 }
 
 .savings-card .mask-button:hover {
@@ -446,6 +465,11 @@ body.dark-mode .filter-button:hover {
     font-size: 0.95rem;
     box-shadow: var(--shadow-sm);
     transition: background-color 0.2s, color 0.2s;
+    display: block; /* Make it a block element */
+    width: 100%; /* Make it take full width */
+    text-align: center; /* Center the text inside */
+    box-sizing: border-box; /* Include padding/border in width calculation */
+    margin-top: 0; /* Ensure no extra top margin from previous flex context */
 }
 
 .savings-card .view-savings-button:hover {
@@ -1011,20 +1035,11 @@ body.dark-mode .calc-btn:not(.clear):not(.operator):not(.equals):hover:not(:acti
 /* Responsive Adjustments (Optional, for wider screens if needed) */
 @media (min-width: 600px) {
     .container {
-        max-width: 960px; /* Allow container to expand up to 960px on larger screens */
-        width: 90%; /* Use a percentage for flexibility */
-        margin: 20px auto; /* Center the container with vertical margins */
-        border-radius: 12px; /* Optional: add border-radius for desktop */
-        min-height: auto; /* Adjust min-height for desktop */
+        /* border-radius: 10px; */ /* Keep it edge-to-edge on mobile, but maybe round on desktop */
+        margin-top: 20px;
+        margin-bottom: 20px;
     }
-    .main-content {
-        padding: 30px; /* Increase padding for desktop view */
-    }
-    .calculator-card, .filter-modal-card {
-        max-width: 380px; /* Allow calculator/modal to be a bit wider but still fixed */
-    }
-    /* Adjust menu sidebar for desktop if desired, e.g., always visible */
-    .main-menu-sidebar {
+    .main-menu-sidebar { /* Allow sidebar to be permanently visible on wider screens if desired */
         /* left: 0; transform: translateX(0); box-shadow: none; border-right: 1px solid var(--border-color); */
     }
     /* Adjust .main-content padding-left if sidebar is permanent */
